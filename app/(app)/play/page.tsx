@@ -115,7 +115,7 @@ export default function HomePage() {
           <h1 style={{ marginTop: 6 }}>{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
         </div>
         <Link href="/me" aria-label="Account">
-          {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={36} />}
+          {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={36} src={profile?.avatar_url} />}
         </Link>
       </div>
 

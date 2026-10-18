@@ -38,7 +38,7 @@ export async function fetchMyGames(userId: string): Promise<GameView[]> {
 export async function fetchPlayers(ids: string[]): Promise<Record<string, PlayerLite>> {
   const uniq = [...new Set(ids)].filter(Boolean);
   if (!uniq.length) return {};
-  const { data } = await supabase().from("profiles").select("id, display_name, skill").in("id", uniq);
+  const { data } = await supabase().from("profiles").select("id, display_name, skill, avatar_url").in("id", uniq);
   const out: Record<string, PlayerLite> = {};
   (data ?? []).forEach((p: PlayerLite) => (out[p.id] = p));
   return out;

@@ -8,14 +8,12 @@ export function hueFor(id: string): number {
   return HUES[h % HUES.length];
 }
 
-export default function Avatar({ id, name, size = 36 }: { id: string; name: string; size?: number }) {
+export default function Avatar({ id, name, size = 36, src }: { id: string; name: string; size?: number; src?: string | null }) {
+  if (src)
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className="avatar" src={src} alt="" title={name} width={size} height={size} style={{ width: size, height: size, objectFit: "cover" }} />;
   return (
-    <span
-      className="avatar"
-      style={{ width: size, height: size, fontSize: size * 0.38, ["--h" as string]: hueFor(id) }}
-      title={name}
-      aria-hidden="true"
-    >
+    <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.38, ["--h" as string]: hueFor(id) }} title={name} aria-hidden="true">
       {initials(name)}
     </span>
   );

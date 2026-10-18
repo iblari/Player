@@ -5,7 +5,23 @@ export type Profile = {
   radius_mi: number;
   available_until: string | null;
   location: unknown | null;
+  avatar_url: string | null;
+  sports: Partial<Record<Sport, number>>;
 };
+
+export type Sport = "pickleball" | "tennis";
+export const SPORTS: { id: Sport; label: string }[] = [
+  { id: "pickleball", label: "Pickleball" },
+  { id: "tennis", label: "Tennis" },
+];
+
+/** Self-rated 1-10 pickleball level <-> DUPR-style 2.0-5.5 used for matching. */
+export function levelToSkill(level: number): number {
+  return Math.round((2 + ((level - 1) * 3.5) / 9) * 4) / 4;
+}
+export function skillToLevel(skill: number): number {
+  return Math.min(10, Math.max(1, Math.round(((skill - 2) / 3.5) * 9) + 1));
+}
 
 export type Court = {
   id: string;
@@ -36,7 +52,7 @@ export type Game = {
   filled_at: string | null;
 };
 
-export type PlayerLite = { id: string; display_name: string; skill: number };
+export type PlayerLite = { id: string; display_name: string; skill: number; avatar_url?: string | null };
 
 export function isAvailable(p: Pick<Profile, "available_until"> | null | undefined): boolean {
   return !!p?.available_until && new Date(p.available_until).getTime() > Date.now();

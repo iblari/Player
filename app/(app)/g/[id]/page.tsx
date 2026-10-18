@@ -209,7 +209,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             const r = rel[pid];
             return (
               <div className="roster-row" key={pid}>
-                <Avatar id={pid} name={names(pid)} />
+                <Avatar id={pid} name={names(pid)} src={players[pid]?.avatar_url} />
                 <div className="grow">
                   <b>{names(pid)}</b>
                   {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
