@@ -15,7 +15,7 @@ Find pickleball players near you. Go available, post a game at your court, and w
 
 ## Setup
 
-1. Create a Supabase project. In the SQL Editor, run `supabase/schema.sql`.
+1. Create a Supabase project. In the SQL Editor, run `supabase/migrations/20261018020000_init.sql` (or connect the repo with Supabase's GitHub integration, which applies it automatically).
 2. Supabase → Authentication → URL Configuration: set **Site URL** to your production URL and add `https://*.vercel.app/**` to **Redirect URLs**.
 3. Set these env vars (see `.env.example`):
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`

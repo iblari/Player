@@ -2,13 +2,14 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 type CookieList = { name: string; value: string; options: CookieOptions }[];
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
 const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_KEY;
   if (!url || !key) return response;
 
   const supabase = createServerClient(url, key, {

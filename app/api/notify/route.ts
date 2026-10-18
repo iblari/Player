@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { serverSupabase } from "@/lib/supabase/server";
+import { VAPID_PUBLIC_KEY } from "@/lib/env";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const pub = VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
   if (!pub || !priv) return NextResponse.json({ sent: 0, reason: "push_not_configured" });
 

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
+import { VAPID_PUBLIC_KEY } from "@/lib/env";
 import { clampSkill, fmtSkill, urlBase64ToUint8Array } from "@/lib/util";
 
 type PushState = "unsupported" | "ios-install" | "off" | "on" | "blocked";
@@ -48,7 +49,7 @@ export default function MePage() {
   }
 
   async function enablePush() {
-    const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const key = VAPID_PUBLIC_KEY;
     if (!key || !userId) return toast("Notifications aren't set up on this server yet.");
     try {
       const reg = await navigator.serviceWorker.register("/sw.js");
