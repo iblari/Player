@@ -82,6 +82,13 @@ function kindOf(t: Record<string, string>) {
 // Generic pitch names worth ignoring ("Court 3", "Tennis Courts").
 const GENERIC = /^(court|courts|tennis|tennis courts?|pickleball|pickleball courts?|pitch)\s*\d*[a-z]?$/i;
 
+/** The database wants 2–80 characters, counted as Postgres does (code points, not UTF-16 units). */
+function fitName(name: string, fallback: string) {
+  const n = [...name.replace(/[\u0000-\u001f\u200b-\u200f]/g, "").trim()];
+  const use = n.length >= 2 && /[\p{L}\p{N}]/u.test(n.join("")) ? n : [...fallback];
+  return use.slice(0, 80).join("").trim();
+}
+
 export function toCourtRows(els: OsmEl[]): CourtRow[] {
   const courts: { el: OsmEl; p: { lat: number; lng: number }; t: Record<string, string> }[] = [];
   const containers: { name: string; kind: string | null; p: { lat: number; lng: number }; area: boolean }[] = [];
@@ -127,7 +134,7 @@ export function toCourtRows(els: OsmEl[]): CourtRow[] {
     const first = g[0].el;
     return {
       ref: `${first.type[0]}${first.id}`,
-      name: (name.trim().length >= 2 ? name.trim() : label).slice(0, 80),
+      name: fitName(name, label),
       town,
       kind: host?.kind ?? (g.some((c) => c.t.leisure === "sports_centre") ? "sports center" : null),
       lat: +lat.toFixed(6),
