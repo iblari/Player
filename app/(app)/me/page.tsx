@@ -7,7 +7,8 @@ import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
 import { VAPID_PUBLIC_KEY } from "@/lib/env";
 import { fmtSkill, urlBase64ToUint8Array } from "@/lib/util";
-import { levelToSkill, skillToLevel, SPORTS, type Sport } from "@/lib/types";
+import { levelToSkill, selfLevel, SPORT_META, skillToLevel, SPORTS, type Sport } from "@/lib/types";
+import { useMyRatings } from "@/lib/sport";
 
 const KNOWN_CLUBS = ["Life Time"];
 
@@ -43,6 +44,7 @@ export default function MePage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [push, setPush] = useState<PushState>("off");
+  const ratings = useMyRatings(userId);
 
   useEffect(() => {
     if (!profile) return;
@@ -202,6 +204,7 @@ export default function MePage() {
           </div>
           {SPORTS.filter((s) => sports[s.id]).map((s) => {
             const lv = sports[s.id]!;
+            const learned = ratings?.[s.id];
             return (
               <div key={s.id} className="level-card">
                 <div className="level-top">
@@ -225,9 +228,19 @@ export default function MePage() {
                 />
                 <div className="level-foot">
                   <span>{LEVEL_HINTS[s.id][lv - 1]}</span>
-                  {s.id === "pickleball" && <span className="muted">≈ DUPR {fmtSkill(levelToSkill(lv))}</span>}
-                  {s.id === "tennis" && <span className="muted">Games coming soon</span>}
+                  <span className="muted">
+                    ≈ {SPORT_META[s.id].rating} {fmtSkill(s.id === "pickleball" ? levelToSkill(lv) : selfLevel(s.id, lv))}
+                  </span>
                 </div>
+                {learned && learned.games > 0 && (
+                  <div className="learned">
+                    <span>
+                      Your rating from {learned.games} scored game{learned.games === 1 ? "" : "s"}
+                      <small> · ±{learned.sigma.toFixed(2)}</small>
+                    </span>
+                    <b>{learned.level.toFixed(2)}</b>
+                  </div>
+                )}
               </div>
             );
           })}

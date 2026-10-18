@@ -8,9 +8,10 @@ import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
 import Avatar from "@/components/Avatar";
 import MembershipPrompt from "@/components/MembershipPrompt";
+import GameResult from "@/components/GameResult";
 import { joinGame, saveAnswer } from "@/lib/membership";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
-import { gameState, type Game, type PlayerLite } from "@/lib/types";
+import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, timeOf, when } from "@/lib/util";
 
 type Row = { player_id: string; no_show: boolean; joined_at: string };
@@ -25,6 +26,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [rows, setRows] = useState<Row[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [rel, setRel] = useState<Record<string, Rel>>({});
+  const [teams, setTeams] = useState<{ team_a: string[]; team_b: string[] } | null>(null);
+  const [levels, setLevels] = useState<Record<string, { level: number | null; games: number }>>({});
   const [pt, setPt] = useState<{ lat: number; lng: number } | null>(null);
   const [noShows, setNoShows] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -33,10 +36,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const load = useCallback(async () => {
     const sb = supabase();
-    const [{ data: g }, { data: r }] = await Promise.all([
+    const [{ data: g }, { data: r }, { data: res }] = await Promise.all([
       sb.from("games").select("*, courts(name, address, notes)").eq("id", id).maybeSingle(),
       sb.from("game_players").select("player_id, no_show, joined_at").eq("game_id", id).order("joined_at"),
+      sb.from("game_results").select("team_a, team_b").eq("game_id", id).maybeSingle(),
     ]);
+    setTeams((res as { team_a: string[]; team_b: string[] } | null) ?? null);
     setGame(g ?? null);
     const list = (r as Row[]) ?? [];
     setRows(list);
@@ -46,6 +51,16 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     const m: Record<string, Rel> = {};
     ((rr as Rel[]) ?? []).forEach((x) => (m[x.player_id] = x));
     setRel(m);
+    if (g) {
+      const { data: lv, error: lvErr } = await sb.rpc("player_levels", { p_ids: ids, p_sport: g.sport ?? "pickleball" });
+      const lm: Record<string, { level: number | null; games: number }> = {};
+      ((lv as { player_id: string; level: number | null; games: number }[]) ?? []).forEach(
+        (x) => (lm[x.player_id] = { level: x.level == null ? null : Number(x.level), games: x.games }),
+      );
+      // Database not migrated yet: show the profile level, as before.
+      if (lvErr) Object.entries(await fetchPlayers(ids)).forEach(([pid, p]) => (lm[pid] = { level: Number(p.skill), games: 0 }));
+      setLevels(lm);
+    }
     if (g && !pt) {
       const { data: p } = await sb.rpc("court_point", { p_court: g.court_id });
       if ((p as { lat: number; lng: number }[])?.[0]) setPt((p as { lat: number; lng: number }[])[0]);
@@ -73,7 +88,15 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     );
 
   const ids = rows.map((r) => r.player_id);
+  const showed = rows.filter((r) => !r.no_show).map((r) => r.player_id);
   const n = ids.length;
+  const sportMeta = SPORT_META[game.sport ?? "pickleball"];
+  // Once a score is logged, seat each team on its own side of the net.
+  // The diagram fills spots left-top, right-top, left-bottom, right-bottom.
+  const seated = teams
+    ? [teams.team_a[0], teams.team_b[0], teams.team_a[1], teams.team_b[1]].filter(Boolean)
+        .concat(ids.filter((pid) => !teams.team_a.includes(pid) && !teams.team_b.includes(pid)))
+    : ids;
   const st = gameState(game, n, game.slots);
   const left = game.slots - n;
   const isHost = game.host_id === userId;
@@ -121,7 +144,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       toast("Attendance saved.");
     });
   async function share() {
-    const text = `${headline} for ${game!.slots === 4 ? "doubles" : "singles"} at ${game!.courts.name}, ${when(game!.starts_at)}.`;
+    const text = `${headline} for ${sportMeta.label.toLowerCase()} ${game!.slots === 4 ? "doubles" : "singles"} at ${game!.courts.name}, ${when(game!.starts_at)}.`;
     try {
       if (navigator.share) await navigator.share({ title: "Fourth Up", text, url });
       else {
@@ -138,7 +161,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       <div className="page-head">
         <div style={{ minWidth: 0 }}>
           <p className="sub" style={{ margin: "0 0 6px" }}>
-            {game.slots === 4 ? "Doubles" : "Singles"} at {game.courts.name}
+            {sportMeta.label} · {game.slots === 4 ? "Doubles" : "Singles"} at {game.courts.name}
           </p>
           <h1>{headline}</h1>
           {st === "open" && (
@@ -159,7 +182,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <span className="muted">{game.club ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.` : "Private court. Players confirm they're members or a member's guest before joining."}</span>
         </div>
       )}
-      <CourtDiagram slots={game.slots} players={ids.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
+      <CourtDiagram slots={game.slots} players={seated.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
 
       <div className="facts">
         <div className="fact">
@@ -167,7 +190,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <b>{when(game.starts_at)}</b>
         </div>
         <div className="fact">
-          <span>Rating</span>
+          <span>{sportMeta.rating} level</span>
           <b>
             {fmtSkill(game.skill_min)}–{fmtSkill(game.skill_max)}
           </b>
@@ -224,7 +247,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                   <b>{names(pid)}</b>
                   {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
                   <div className="small muted">
-                    {players[pid] ? `Rated ${fmtSkill(players[pid].skill)}` : ""}
+                    {levels[pid]?.level != null
+                      ? `${sportMeta.label} ${fmtSkill(levels[pid].level!)}${levels[pid].games ? ` · ${levels[pid].games} rated` : " · self-rated"}`
+                      : ""}
                     {r ? `, shows up ${Math.round((r.showed / r.games) * 100)}% of ${r.games}` : ", new player"}
                   </div>
                 </div>
@@ -266,6 +291,18 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             Save attendance
           </button>
         </section>
+      )}
+
+      {userId && inGame && started && st !== "cancelled" && showed.length >= 2 && (
+        <GameResult
+          gameId={game.id}
+          sport={game.sport ?? "pickleball"}
+          players={showed}
+          userId={userId}
+          nameOf={names}
+          avatarOf={(pid) => players[pid]?.avatar_url}
+          onScored={load}
+        />
       )}
 
       {!started && st !== "cancelled" && (inGame || isHost) && (

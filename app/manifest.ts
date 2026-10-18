@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Fourth Up",
     short_name: "Fourth Up",
-    description: "Find pickleball players near you.",
+    description: "Find pickleball and tennis players near you.",
     start_url: "/play",
     display: "standalone",
     background_color: "#111111",

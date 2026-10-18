@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { rpcCompat, without } from "@/lib/rpc";
 import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
@@ -11,12 +12,14 @@ import LocationSheet from "@/components/LocationSheet";
 import MembershipPrompt from "@/components/MembershipPrompt";
 import { joinGame, saveAnswer } from "@/lib/membership";
 import RecommendedCourts from "@/components/RecommendedCourts";
+import SportSwitch from "@/components/SportSwitch";
+import { useSport } from "@/lib/sport";
 import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
 import { getCoords } from "@/lib/geo";
 import { useNearby } from "@/lib/nearby";
 import { fetchMyGames, fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames, type GameView } from "@/lib/games";
-import { isAvailable, type Court, type PlayerLite } from "@/lib/types";
+import { isAvailable, SPORT_META, type Court, type PlayerLite } from "@/lib/types";
 import { fmtSkill, miles, timeOf, when } from "@/lib/util";
 
 const PlayerMap = dynamic(() => import("@/components/PlayerMap"), { ssr: false });
@@ -31,7 +34,8 @@ export default function HomePage() {
   const router = useRouter();
   const toast = useToast();
   const { userId, profile, update, refresh } = useSession();
-  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15);
+  const [sport, setSport] = useSport(profile?.sports);
+  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15, sport);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
   const [dur, setDur] = useState<number | "pick" | null>(null);
@@ -47,13 +51,14 @@ export default function HomePage() {
   const [showOpts, setShowOpts] = useState(false);
   const [ask, setAsk] = useState<GameView | null>(null);
   const [recommended, setRecommended] = useState<Court[] | null>(null);
+  const sportLabel = SPORT_META[sport].label;
 
   useEffect(() => {
     if (!coords) return;
-    supabase()
-      .rpc("recommended_courts", { lat: coords.lat, lng: coords.lng, p_limit: 8 })
+    const base = { lat: coords.lat, lng: coords.lng, p_limit: 8 };
+    rpcCompat("recommended_courts", { ...base, p_sport: sport }, base)
       .then(({ data }) => setRecommended((data as Court[]) ?? []));
-  }, [coords, courts]);
+  }, [coords, courts, sport]);
 
   const avail = isAvailable(profile);
   const firstName = profile?.display_name && !profile.display_name.includes("@") ? profile.display_name.split(" ")[0] : "";
@@ -61,14 +66,14 @@ export default function HomePage() {
   const load = useCallback(async () => {
     if (!userId) return;
     const sb = supabase();
-    const [{ data: r }, { data: n }, mine] = await Promise.all([sb.rpc("recent_courts", { p_limit: 2 }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
+    const [{ data: r }, { data: n }, mine] = await Promise.all([rpcCompat("recent_courts", { p_limit: 2, p_sport: sport }, { p_limit: 2 }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
     setRecent((r as Recent[]) ?? []);
     const near = ((n as Nearby[]) ?? []).map((g) => ({ ...g, status: "open" as const, attendance_done: false, created_at: "", filled_at: null, court_lat: null, court_lng: null }));
     setGames(near);
     const upcoming = mine.filter((g) => new Date(g.starts_at).getTime() > Date.now() - 90 * 60000).sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
     setNext(upcoming[0] ?? null);
     setPlayers(await fetchPlayers([...near, ...mine].flatMap((g) => g.player_ids)));
-  }, [userId]);
+  }, [userId, sport]);
 
   useEffect(() => {
     load();
@@ -138,10 +143,11 @@ export default function HomePage() {
     await supabase().from("game_passes").insert({ game_id: id, player_id: userId });
   }
   function pick(c: Court) {
-    router.push(`/host?court=${c.id}${sheet === "later" ? "&when=later" : ""}`);
+    router.push(`/host?court=${c.id}&sport=${sport}${sheet === "later" ? "&when=later" : ""}`);
   }
 
   const names = (id: string) => nameOf(players, id, userId);
+  const visible = games?.filter((g) => (g.sport ?? "pickleball") === sport) ?? null;
 
   return (
     <>
@@ -157,10 +163,12 @@ export default function HomePage() {
         </Link>
       </div>
 
+      <SportSwitch value={sport} onChange={setSport} />
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="search-pill" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>
           <SearchIcon />
-          <span className="label">Pick a location to play</span>
+          <span className="label">Where are you playing {sportLabel.toLowerCase()}?</span>
           <button
             className="later"
             onClick={(e) => {
@@ -175,7 +183,7 @@ export default function HomePage() {
         {recents.length > 0 && (
           <div className="list">
             {recents.map((r) => (
-              <Link key={r.id} className="list-row" href={`/host?court=${r.id}`}>
+              <Link key={r.id} className="list-row" href={`/host?court=${r.id}&sport=${sport}`}>
                 <span className="icon-circle">
                   <ClockIcon />
                 </span>
@@ -257,7 +265,7 @@ export default function HomePage() {
               <CourtDiagram size="sm" slots={next.slots} players={next.player_ids.map((id) => ({ id, name: names(id), isMe: id === userId }))} />
             </span>
             <span className="grow">
-              <span className="m">Up next</span>
+              <span className="m">Up next · {SPORT_META[next.sport ?? "pickleball"].label}</span>
               <span className="t">{next.court_name}</span>
               <span className="m">
                 {when(next.starts_at)} · {next.player_ids.length}/{next.slots} in
@@ -311,24 +319,24 @@ export default function HomePage() {
 
       <section className="block">
         <div className="block-head">
-          <h2>Games that need you</h2>
-          <span className="count">{games?.length || ""}</span>
+          <h2>{sportLabel} games that need you</h2>
+          <span className="count">{visible?.length || ""}</span>
         </div>
-        {games === null ? (
+        {visible === null ? (
           <div className="skeleton" />
         ) : !profile?.location ? (
           <div className="empty">
             <strong>Go available once to see games near you.</strong>
             <span>It saves where you are so hosts nearby can find you.</span>
           </div>
-        ) : games.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="empty">
-            <strong>No open games within {profile?.radius_mi} mi at your level.</strong>
+            <strong>No open {sportLabel.toLowerCase()} games within {profile?.radius_mi} mi at your level.</strong>
             <span>Pick a court above and be the first.</span>
           </div>
         ) : (
           <div className="hscroll">
-            {games.map((g) => {
+            {visible.map((g) => {
               const left = g.slots - g.player_ids.length;
               return (
                 <div className="gcard" key={g.id}>

@@ -1,7 +1,8 @@
-/* Fourth Up — dark, Uber-style shell.
-   Black and white chrome, one accent: optic ball yellow for "available" and live players.
+/* Fourth Up — map-first, Uber-style shell.
+   Black and white chrome, condensed uppercase display type, one accent: optic ball yellow for "available" and live players.
    The court diagram keeps its real court colors. */
 :root {
+  /* Uber-style black and white chrome; one accent: optic ball yellow */
   --paper: #111111;
   --surface: #1e1e1e;
   --raised: #262626;
@@ -24,8 +25,8 @@
   --bad-bg: #3b1a17;
   --focus: #ffffff;
 
-  --f-display: var(--font-figtree), system-ui, -apple-system, sans-serif;
-  --f-body: var(--font-figtree), system-ui, -apple-system, sans-serif;
+  --f-display: var(--font-barlow-condensed), "Arial Narrow", system-ui, sans-serif;
+  --f-body: var(--font-barlow), system-ui, -apple-system, sans-serif;
 
   --s-1: 0.8125rem;
   --s0: 1rem;
@@ -68,10 +69,10 @@ img, svg { max-width: 100%; }
 .shell.bare { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
 
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
-h1, h2, h3 { margin: 0; font-family: var(--f-display); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
-h1 { font-size: var(--s4); }
-h2 { font-size: var(--s1); }
-h3 { font-size: var(--s0); }
+h1, h2, h3 { margin: 0; font-family: var(--f-display); font-weight: 800; line-height: 1; letter-spacing: 0.005em; text-wrap: balance; }
+h1 { font-size: var(--s5); text-transform: uppercase; }
+h2 { font-size: var(--s2); text-transform: uppercase; font-weight: 700; }
+h3 { font-size: var(--s1); font-family: var(--f-body); font-weight: 600; letter-spacing: 0; }
 .sub { color: var(--muted); font-size: var(--s-1); margin: 4px 0 0; }
 .muted { color: var(--muted); }
 .small { font-size: var(--s-1); }
@@ -107,7 +108,7 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
-.btn-primary { background: var(--ink); color: #000; }
+.btn-primary { background: var(--ball); color: #000; }
 .btn-ball { background: var(--ball); color: var(--ball-ink); }
 .btn-ghost { background: transparent; color: var(--muted); }
 .btn-danger { color: var(--bad); }
@@ -193,11 +194,15 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 .court-pin svg { width: 16px; height: 16px; }
 .court-pin.hot { background: var(--ball); color: var(--ball-ink); }
 .me-pin { width: 16px; height: 16px; border-radius: 50%; background: #3d8bff; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(61,139,255,.25); }
-.leaflet-container { background: #191a1a !important; font-family: var(--f-body); }
-.tiles-dark { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.92) saturate(0.35); }
-.leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 10px !important; }
-.leaflet-control-attribution a { color: #aaa !important; }
-.leaflet-control-zoom a { background: #1e1e1e !important; color: #fff !important; border-color: #2f2f2f !important; }
+.maplibregl-map { background: #191a1a; font-family: var(--f-body); }
+.maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(0,0,0,0.7) !important; color: #999; font-size: 10px; }
+.maplibregl-ctrl-attrib a { color: #bbb !important; }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
+.maplibregl-ctrl-group { background: var(--surface) !important; border: 1px solid var(--line); box-shadow: none !important; }
+.maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
+.maplibregl-ctrl-group button + button { border-top-color: var(--line) !important; }
+.maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(1); }
+button.court-pin { border: 0; padding: 0; cursor: pointer; }
 
 /* ---------- Horizontal game cards ---------- */
 .hscroll { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
@@ -254,7 +259,7 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 @keyframes drop-in { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------- Game page ---------- */
-.score-big { font-weight: 800; font-size: 4rem; line-height: 0.85; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.score-big { font-family: var(--f-display); font-weight: 800; font-size: 4.5rem; line-height: 0.85; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .score-big small { font-size: 0.45em; color: var(--muted); }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
 .fact { padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -294,9 +299,9 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 
 /* ---------- Landing ---------- */
 .landing { gap: 36px; }
-.wordmark { font-weight: 800; font-size: var(--s1); letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.wordmark { font-family: var(--f-display); font-weight: 800; font-size: var(--s2); letter-spacing: 0.01em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
 .wordmark i { width: 22px; height: 22px; border-radius: 50%; background: var(--ball); display: inline-block; }
-.hero-title { font-size: clamp(2.6rem, 12vw, 3.8rem); line-height: 0.98; letter-spacing: -0.035em; }
+.hero-title { font-size: clamp(3rem, 14vw, 4.6rem); line-height: 0.92; letter-spacing: 0; }
 .hero-copy { font-size: var(--s1); line-height: 1.45; max-width: 30ch; margin: 0; color: var(--muted); }
 .steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
 .steps li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
@@ -389,3 +394,35 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 .segbar button:disabled { opacity: 0.6; }
 .until-row { display: flex; gap: 8px; }
 .until-row .input { flex: 1; min-width: 0; color-scheme: dark; }
+
+/* ---------- Sport switch ---------- */
+.sport-switch { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); align-self: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.sport-switch button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font-weight: 600; font-size: var(--s-1); cursor: pointer; white-space: nowrap; }
+.sport-switch button[aria-pressed="true"] { background: var(--ball); color: var(--ball-ink); }
+.sport-switch .soon { padding: 0 12px; color: var(--faint); font-size: var(--s-1); white-space: nowrap; }
+
+/* ---------- Post-game result ---------- */
+.result { padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.scoreboard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.score-side { display: flex; flex-direction: column; gap: 8px; }
+.score-num { font-family: var(--f-display); font-size: 2.25rem !important; }
+.final { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.final > div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 14px; background: var(--paper); min-width: 0; }
+.final b { font-family: var(--f-display); font-size: 3.5rem; line-height: 1; font-weight: 800; }
+.final b.win { color: var(--ball); }
+.level-delta { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--paper); }
+.level-delta b { font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; }
+.level-delta .arrow { color: var(--ball); }
+.verdict-row { display: flex; align-items: center; gap: 12px; }
+.verdict-row .grow { flex: 1; min-width: 0; font-weight: 600; }
+.segbar-3 { grid-template-columns: repeat(3, 1fr); flex: none; width: 200px; }
+.segbar-3 button { min-height: 44px; }
+.learned { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: var(--s-1); }
+.learned small { color: var(--muted); }
+.learned b { font-family: var(--f-display); font-size: 1.6rem; color: var(--ball); }
+@media (max-width: 380px) { .verdict-row { flex-wrap: wrap; } .segbar-3 { width: 100%; } }
+
+/* ---------- Wider screens: the app is a web app first ---------- */
+@media (min-width: 900px) {
+  .shell { max-width: 640px; }
+}
