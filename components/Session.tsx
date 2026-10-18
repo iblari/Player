@@ -31,6 +31,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setUserId(id);
     if (id) {
       const { data: p } = await sb.from("profiles").select("*").eq("id", id).maybeSingle();
+      // Google sign-ins start with the email prefix as their name. Swap in "First L." from
+      // their Google profile once; anything the player typed themselves is left alone.
+      const meta = (data.user?.user_metadata ?? {}) as { full_name?: string; name?: string; given_name?: string; family_name?: string };
+      const full = (meta.full_name || meta.name || "").trim();
+      const emailPrefix = (data.user?.email ?? "").split("@")[0];
+      if (p && full && (!p.display_name || p.display_name === emailPrefix)) {
+        const parts = full.split(/\s+/);
+        const nice = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+        const { error } = await sb.from("profiles").update({ display_name: nice }).eq("id", id);
+        if (!error) (p as Profile).display_name = nice;
+      }
       setProfile((p as Profile) ?? null);
     } else setProfile(null);
     setLoading(false);

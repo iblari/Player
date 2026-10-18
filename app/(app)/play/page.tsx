@@ -151,19 +151,15 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="page-head" style={{ alignItems: "center" }}>
-        <div>
-          <div className="wordmark" style={{ fontSize: "1rem" }}>
-            <i aria-hidden="true" style={{ width: 16, height: 16 }} /> Fourth Up
-          </div>
-          <h1 style={{ marginTop: 6 }}>{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <SportSwitch value={sport} onChange={setSport} />
+          <Link href="/me" aria-label="Account" style={{ flex: "none" }}>
+            {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={40} src={profile?.avatar_url} />}
+          </Link>
         </div>
-        <Link href="/me" aria-label="Account">
-          {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={36} src={profile?.avatar_url} />}
-        </Link>
+        <h1>{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
       </div>
-
-      <SportSwitch value={sport} onChange={setSport} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="search-pill" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>
