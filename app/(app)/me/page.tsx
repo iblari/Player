@@ -115,6 +115,12 @@ export default function MePage() {
       toast("Couldn't turn on notifications. Try again.");
     }
   }
+  async function testPush() {
+    const r = await fetch("/api/notify-test", { method: "POST" }).then((x) => x.json()).catch(() => null);
+    if (r?.sent) toast("Test sent. It should pop up in a few seconds.");
+    else if (r?.reason === "no_devices") toast("This device isn't signed up yet. Turn notifications off and on again.");
+    else toast("Couldn't send a test. Try again in a minute.");
+  }
   async function turnOffPush() {
     await disablePush();
     setPush("off");
@@ -279,6 +285,14 @@ export default function MePage() {
               />
             )}
           </div>
+          {push === "on" && (
+            <button type="button" className="list-row" onClick={testPush}>
+              <span className="grow">
+                <span className="t">Send a test notification</span>
+                <span className="m">Check it reaches this device</span>
+              </span>
+            </button>
+          )}
         </div>
       </section>
 
