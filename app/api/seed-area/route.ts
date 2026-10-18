@@ -48,20 +48,26 @@ export async function POST(request: Request) {
   let els: OsmEl[] | null = null;
   const errs: string[] = [];
   const q = overpassQuery(bbox);
-  for (const url of MIRRORS) {
+  // The main server is busy at peak times: try it, then the mirrors, then the main one again after a pause.
+  const plan = [MIRRORS[0], MIRRORS[1], MIRRORS[2], "wait", MIRRORS[0], "wait", MIRRORS[0]];
+  for (const url of plan) {
+    if (els) break;
+    if (url === "wait") {
+      await new Promise((r) => setTimeout(r, 8000));
+      continue;
+    }
     try {
       const r = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "letslarp.io court finder (hello@letslarp.io)" },
         body: "data=" + encodeURIComponent(q),
-        signal: AbortSignal.timeout(150000),
+        signal: AbortSignal.timeout(90000),
       });
       if (!r.ok) {
         errs.push(`${new URL(url).host} ${r.status} ${(await r.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 160)}`);
         continue;
       }
       els = ((await r.json()) as { elements: OsmEl[] }).elements;
-      break;
     } catch (e) {
       errs.push(`${new URL(url).host} ${(e as Error).name}: ${(e as Error).message}`.slice(0, 160));
     }
