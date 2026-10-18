@@ -4,7 +4,7 @@ import { SUPABASE_URL } from "@/lib/env";
 import { blockAround, overpassQuery, toCourtRows, type OsmEl } from "@/lib/osmCourts";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const MIRRORS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
 const FRESH_DAYS = 30;
@@ -26,9 +26,14 @@ export async function POST(request: Request) {
   const { cells, bbox } = blockAround(lat, lng);
 
   const since = new Date(Date.now() - FRESH_DAYS * 864e5).toISOString();
-  const { data: done, error: cellErr } = await db.from("court_seed_cells").select("cell").in("cell", cells).gt("seeded_at", since);
+  const { data: rows0, error: cellErr } = await db.from("court_seed_cells").select("cell, found, seeded_at").in("cell", cells).gt("seeded_at", since);
   if (cellErr) return NextResponse.json({ added: 0, reason: "not_migrated" });
-  if ((done?.length ?? 0) === cells.length) return NextResponse.json({ added: 0, reason: "already_loaded" });
+  // Finished cells have a count; a claim without one is a load in progress (or one that died).
+  const fresh = (r: { seeded_at: string }) => Date.now() - new Date(r.seeded_at).getTime() < 6 * 60e3;
+  const done = (rows0 ?? []).filter((r) => r.found !== null);
+  const loading = (rows0 ?? []).filter((r) => r.found === null && fresh(r));
+  if (done.length === cells.length) return NextResponse.json({ added: 0, reason: "already_loaded" });
+  if (loading.length) return NextResponse.json({ added: 0, reason: "loading" });
 
   // Gentle on the free map servers and on us.
   const { count } = await db
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "letslarp.io court finder (hello@letslarp.io)" },
         body: "data=" + encodeURIComponent(q),
-        signal: AbortSignal.timeout(50000),
+        signal: AbortSignal.timeout(150000),
       });
       if (!r.ok) continue;
       els = ((await r.json()) as { elements: OsmEl[] }).elements;

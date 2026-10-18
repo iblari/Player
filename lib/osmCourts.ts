@@ -39,20 +39,17 @@ export function blockAround(lat: number, lng: number): { cells: string[]; bbox: 
 
 export function overpassQuery(b: Bbox) {
   const bb = `${b.s.toFixed(4)},${b.w.toFixed(4)},${b.n.toFixed(4)},${b.e.toFixed(4)}`;
-  return `[out:json][timeout:55];
+  // Plain bbox filters only (fast); matching courts to the park/school they sit in happens in code.
+  return `[out:json][timeout:120][maxsize:268435456];
 (
   nwr["leisure"="pitch"]["sport"~"tennis|pickleball"](${bb});
   nwr["leisure"="sports_centre"]["sport"~"tennis|pickleball"](${bb});
-)->.courts;
-.courts out center tags;
-(
-  nwr(around.courts:250)["leisure"~"^(park|recreation_ground|sports_centre|stadium|playground|garden|nature_reserve)$"]["name"];
-  nwr(around.courts:250)["amenity"~"^(school|college|university|community_centre)$"]["name"];
-  nwr(around.courts:250)["club"]["name"];
-)->.near;
-.near out center tags;
-node(around.courts:5000)["place"~"^(city|town|village|suburb|hamlet|neighbourhood|quarter)$"]["name"];
-out tags;`;
+  way["leisure"~"^(park|recreation_ground|sports_centre)$"]["name"](${bb});
+  way["amenity"~"^(school|college|university|community_centre)$"]["name"](${bb});
+  nwr["club"~"^(tennis|sport)$"]["name"](${bb});
+  node["place"~"^(city|town|village|suburb|hamlet|neighbourhood|quarter)$"]["name"](${bb});
+);
+out center tags qt;`;
 }
 
 const R = 6371000;
@@ -116,7 +113,7 @@ export function toCourtRows(els: OsmEl[]): CourtRow[] {
     const own = g.map((c) => c.t.name).find((n) => n && !GENERIC.test(n.trim()));
     const host = containers
       .map((k) => ({ k, d: meters(at, k.p) }))
-      .filter((x) => x.d < 300)
+      .filter((x) => x.d < 450)
       .sort((a, b) => a.d - b.d)[0]?.k;
     const town = places
       .map((pl) => ({ pl, d: meters(at, pl.p) }))
