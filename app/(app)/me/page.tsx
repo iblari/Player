@@ -10,7 +10,7 @@ import { fmtSkill, urlBase64ToUint8Array } from "@/lib/util";
 import { levelToSkill, selfLevel, SPORT_META, skillToLevel, SPORTS, type Sport } from "@/lib/types";
 import { useMyRatings } from "@/lib/sport";
 
-const KNOWN_CLUBS = ["Life Time"];
+const KNOWN_CLUBS = ["Life Time", "Equinox"];
 
 type PushState = "unsupported" | "ios-install" | "off" | "on" | "blocked";
 
