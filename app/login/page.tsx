@@ -159,9 +159,6 @@ function LoginForm() {
           <button className="btn btn-primary btn-block" disabled={busy}>
             {busy ? "One sec…" : mode === "signup" ? "Create account" : mode === "link" ? "Email me a sign-in link" : "Sign in"}
           </button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setMode(mode === "link" ? "signin" : "link"); setErr(null); }}>
-            {mode === "link" ? "Use a password instead" : "Email me a sign-in link instead"}
-          </button>
         </form>
       )}
           <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
