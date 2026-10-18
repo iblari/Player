@@ -26,6 +26,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [rows, setRows] = useState<Row[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [rel, setRel] = useState<Record<string, Rel>>({});
+  const [teams, setTeams] = useState<{ team_a: string[]; team_b: string[] } | null>(null);
   const [levels, setLevels] = useState<Record<string, { level: number | null; games: number }>>({});
   const [pt, setPt] = useState<{ lat: number; lng: number } | null>(null);
   const [noShows, setNoShows] = useState<string[]>([]);
@@ -35,10 +36,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const load = useCallback(async () => {
     const sb = supabase();
-    const [{ data: g }, { data: r }] = await Promise.all([
+    const [{ data: g }, { data: r }, { data: res }] = await Promise.all([
       sb.from("games").select("*, courts(name, address, notes)").eq("id", id).maybeSingle(),
       sb.from("game_players").select("player_id, no_show, joined_at").eq("game_id", id).order("joined_at"),
+      sb.from("game_results").select("team_a, team_b").eq("game_id", id).maybeSingle(),
     ]);
+    setTeams((res as { team_a: string[]; team_b: string[] } | null) ?? null);
     setGame(g ?? null);
     const list = (r as Row[]) ?? [];
     setRows(list);
@@ -86,6 +89,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const showed = rows.filter((r) => !r.no_show).map((r) => r.player_id);
   const n = ids.length;
   const sportMeta = SPORT_META[game.sport ?? "pickleball"];
+  // Once a score is logged, seat each team on its own side of the net.
+  // The diagram fills spots left-top, right-top, left-bottom, right-bottom.
+  const seated = teams
+    ? [teams.team_a[0], teams.team_b[0], teams.team_a[1], teams.team_b[1]].filter(Boolean)
+        .concat(ids.filter((pid) => !teams.team_a.includes(pid) && !teams.team_b.includes(pid)))
+    : ids;
   const st = gameState(game, n, game.slots);
   const left = game.slots - n;
   const isHost = game.host_id === userId;
@@ -171,7 +180,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <span className="muted">{game.club ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.` : "Private court. Players confirm they're members or a member's guest before joining."}</span>
         </div>
       )}
-      <CourtDiagram slots={game.slots} players={ids.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
+      <CourtDiagram slots={game.slots} players={seated.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
 
       <div className="facts">
         <div className="fact">
@@ -290,6 +299,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           userId={userId}
           nameOf={names}
           avatarOf={(pid) => players[pid]?.avatar_url}
+          onScored={load}
         />
       )}
 

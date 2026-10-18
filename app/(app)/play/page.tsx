@@ -33,7 +33,8 @@ export default function HomePage() {
   const router = useRouter();
   const toast = useToast();
   const { userId, profile, update, refresh } = useSession();
-  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15);
+  const [sport, setSport] = useSport(profile?.sports);
+  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15, sport);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
   const [dur, setDur] = useState<number | "pick" | null>(null);
@@ -49,15 +50,14 @@ export default function HomePage() {
   const [showOpts, setShowOpts] = useState(false);
   const [ask, setAsk] = useState<GameView | null>(null);
   const [recommended, setRecommended] = useState<Court[] | null>(null);
-  const [sport, setSport] = useSport(profile?.sports);
   const sportLabel = SPORT_META[sport].label;
 
   useEffect(() => {
     if (!coords) return;
     supabase()
-      .rpc("recommended_courts", { lat: coords.lat, lng: coords.lng, p_limit: 8 })
+      .rpc("recommended_courts", { lat: coords.lat, lng: coords.lng, p_limit: 8, p_sport: sport })
       .then(({ data }) => setRecommended((data as Court[]) ?? []));
-  }, [coords, courts]);
+  }, [coords, courts, sport]);
 
   const avail = isAvailable(profile);
   const firstName = profile?.display_name && !profile.display_name.includes("@") ? profile.display_name.split(" ")[0] : "";
@@ -65,14 +65,14 @@ export default function HomePage() {
   const load = useCallback(async () => {
     if (!userId) return;
     const sb = supabase();
-    const [{ data: r }, { data: n }, mine] = await Promise.all([sb.rpc("recent_courts", { p_limit: 2 }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
+    const [{ data: r }, { data: n }, mine] = await Promise.all([sb.rpc("recent_courts", { p_limit: 2, p_sport: sport }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
     setRecent((r as Recent[]) ?? []);
     const near = ((n as Nearby[]) ?? []).map((g) => ({ ...g, status: "open" as const, attendance_done: false, created_at: "", filled_at: null, court_lat: null, court_lng: null }));
     setGames(near);
     const upcoming = mine.filter((g) => new Date(g.starts_at).getTime() > Date.now() - 90 * 60000).sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
     setNext(upcoming[0] ?? null);
     setPlayers(await fetchPlayers([...near, ...mine].flatMap((g) => g.player_ids)));
-  }, [userId]);
+  }, [userId, sport]);
 
   useEffect(() => {
     load();
@@ -264,7 +264,7 @@ export default function HomePage() {
               <CourtDiagram size="sm" slots={next.slots} players={next.player_ids.map((id) => ({ id, name: names(id), isMe: id === userId }))} />
             </span>
             <span className="grow">
-              <span className="m">Up next</span>
+              <span className="m">Up next · {SPORT_META[next.sport ?? "pickleball"].label}</span>
               <span className="t">{next.court_name}</span>
               <span className="m">
                 {when(next.starts_at)} · {next.player_ids.length}/{next.slots} in

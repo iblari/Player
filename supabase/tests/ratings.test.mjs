@@ -29,6 +29,12 @@ await db.exec(`
 `);
 await db.exec(readFileSync(MIG, "utf8"));
 ok(true, "migration applies");
+// Court sports migration: SQL bodies need real PostGIS, so skip body checks and test the table + trigger.
+const MIG2 = new URL("../migrations/20261018120000_court_sports.sql", import.meta.url).pathname;
+await db.exec("alter table public.courts add column town text, add column kind text, add column indoor boolean default false, add column lit boolean default false, add column source text default 'user', add column address text, add column court_count int, add column notes text, add column created_by uuid; set check_function_bodies = off;");
+await db.exec(readFileSync(MIG2, "utf8"));
+await db.exec("set check_function_bodies = on;");
+ok(true, "court sports migration applies");
 
 // --- Math vs reference implementation
 const ts = new TrueSkill(3.0, 0.8, 0.4, 0.02, 0); // mu, sigma, beta, tau, drawProbability
@@ -85,6 +91,11 @@ const fb = (await db.query(`select count(*)::int n from level_feedback where gam
 ok(fb === 3, `feedback stored for the other 3 players, not self (${fb})`);
 const mine = (await db.query(`select * from my_ratings()`)).rows;
 ok(mine.length === 1 && mine[0].sport === "pickleball" && mine[0].games === 1, `my_ratings: ${JSON.stringify(mine)}`);
+
+// --- Court sports: tennis games only at courts tagged for tennis
+await expectErr(`insert into games (host_id, court_id, slots, skill_min, skill_max, starts_at, expires_at, sport) values ($1, $2, 2, 2, 6, now(), now(), 'tennis')`, [P[1], court], "court_sport");
+await db.query(`update courts set sports = '{pickleball,tennis}' where id = $1`, [court]);
+await expectErr(`update courts set sports = '{golf}' where id = $1`, [court], "courts_sports_check");
 
 // --- Upset cap: a 2.5 beating a 5.0 in singles moves at most 0.5
 const g2 = (await db.query(`insert into games (host_id, court_id, slots, skill_min, skill_max, starts_at, expires_at, sport) values ($1, $2, 2, 2, 6, now() - interval '1 hour', now(), 'tennis') returning id`, [P[1], court])).rows[0].id;

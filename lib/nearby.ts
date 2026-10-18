@@ -2,13 +2,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { getCoords, lastCoords, type Coords } from "@/lib/geo";
-import type { Court } from "@/lib/types";
+import type { Court, Sport } from "@/lib/types";
 import type { PlayerCell } from "@/components/PlayerMap";
 
 export const FALLBACK: Coords = { lat: 40.7128, lng: -74.006 };
 
-/** Location + nearby courts + available-player cells, refreshed on demand. */
-export function useNearby(radius = 15) {
+/** Location + nearby courts + available-player cells for a sport, refreshed on demand. */
+export function useNearby(radius = 15, sport?: Sport) {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [locErr, setLocErr] = useState<string | null>(null);
   const [courts, setCourts] = useState<Court[] | null>(null);
@@ -19,15 +19,15 @@ export function useNearby(radius = 15) {
     async (c: Coords) => {
       const sb = supabase();
       const [a, b, n] = await Promise.all([
-        sb.rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: radius }),
-        sb.rpc("available_players_map", { lat: c.lat, lng: c.lng, radius_mi: radius }),
-        sb.rpc("players_nearby", { lat: c.lat, lng: c.lng, radius_mi: radius }),
+        sb.rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
+        sb.rpc("available_players_map", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
+        sb.rpc("players_nearby", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
       ]);
       setPlayers(typeof n.data === "number" ? n.data : null);
       setCourts((a.data as Court[]) ?? []);
       setCells((b.data as PlayerCell[]) ?? []);
     },
-    [radius]
+    [radius, sport]
   );
 
   const locate = useCallback(async () => {
@@ -54,6 +54,11 @@ export function useNearby(radius = 15) {
     }
     locate();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reload when the sport changes.
+  useEffect(() => {
+    if (coords) load(coords);
+  }, [sport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(() => coords && load(coords), [coords, load]);
   return { coords, locErr, courts, cells, players, locate, refresh };

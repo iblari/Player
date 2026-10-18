@@ -27,6 +27,7 @@ export default function GameResult({
   userId,
   nameOf,
   avatarOf,
+  onScored,
 }: {
   gameId: string;
   sport: Sport;
@@ -34,6 +35,7 @@ export default function GameResult({
   userId: string;
   nameOf: (id: string) => string;
   avatarOf: (id: string) => string | null | undefined;
+  onScored?: () => void;
 }) {
   const toast = useToast();
   const meta = SPORT_META[sport];
@@ -93,6 +95,7 @@ export default function GameResult({
     }
     toast("Score saved. Ratings updated.");
     load();
+    onScored?.();
   }
 
   async function submitFeedback() {

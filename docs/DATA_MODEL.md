@@ -25,7 +25,7 @@ erDiagram
 | Table | What it stores | Written by |
 |---|---|---|
 | `profiles` | Name, location, radius, availability, clubs, self-rated level per sport (`sports` jsonb, 1–10) | the player |
-| `courts` | Location, court count, members-only / club (e.g. Life Time) | seed data + players |
+| `courts` | Location, court count, members-only / club (e.g. Life Time), **sports hosted** | seed data + players |
 | `games` | Host, court, **sport**, singles/doubles, level range, start time, status | `create_game` |
 | `game_players` | Roster, join time, no-show flag | `join_game`, the host after the game |
 | `player_ratings` | **Learned level per (player, sport)**: `mu` (level), `sigma` (uncertainty), games counted | `submit_result` only |
@@ -55,6 +55,8 @@ Why TrueSkill rather than Elo: Elo is built for 1v1 and has no notion of uncerta
 - One game moves a level by at most ±0.5. This stops a fluke, or a sandbagging new account, from swinging a rating.
 - Levels are clamped to the sport's scale.
 - A score is logged once per game, by a player in that game, after the start time. Teams must be equal size, made of players from the roster.
+
+**Sports on courts.** Each court lists the sports it hosts (existing NJ courts default to pickleball). Court lists, the live player map and recent courts all filter by the selected sport, and a trigger blocks a game whose sport the court doesn't host.
 
 **Matching.** `player_level(player, sport)` returns the learned mu once a player has scored games, and otherwise their self-rating. `games_for_me`, `push_targets` and `fill_supply` all use it, so as people play, matching quietly switches from what they claimed to how they actually performed.
 

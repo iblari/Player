@@ -32,8 +32,8 @@ function HostInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { profile, userId } = useSession();
-  const { courts, cells } = useNearby(25);
   const [sport, setSport] = useSport(profile?.sports, params.get("sport"));
+  const { courts, cells } = useNearby(25, sport);
   const meta = SPORT_META[sport];
   const ratings = useMyRatings(userId);
   const myLevel = ratings ? (ratings[sport]?.level ?? null) : undefined;
@@ -75,7 +75,7 @@ function HostInner() {
     (async () => {
       const sb = supabase();
       const [{ data: row }, { data: p }] = await Promise.all([
-        sb.from("courts").select("id, name, address, court_count, notes").eq("id", courtId).maybeSingle(),
+        sb.from("courts").select("id, name, address, court_count, notes, members_only, club, sports").eq("id", courtId).maybeSingle(),
         sb.rpc("court_point", { p_court: courtId }),
       ]);
       const pt = (p as { lat: number; lng: number }[])?.[0];
@@ -124,6 +124,10 @@ function HostInner() {
       const { data: h } = await supabase().rpc("active_hosted_game");
       setHosting(((h as { id: string; court_name: string; starts_at: string; status: string }[]) ?? [])[0] ?? null);
       return setErr("You're already hosting a game. Cancel it or wait until it ends to host another.");
+    }
+    if (error?.message?.includes("court_sport")) {
+      setBusy(false);
+      return setErr(`${court?.name ?? "That court"} isn't listed for ${meta.label.toLowerCase()}. Pick another court.`);
     }
     if (error?.message?.includes("needs_membership")) {
       setBusy(false);
@@ -175,6 +179,12 @@ function HostInner() {
         </span>
       </button>
 
+      {court?.sports && !court.sports.includes(sport) && (
+        <div className="notice warn" role="status">
+          <b>{court.name} isn&apos;t listed for {meta.label.toLowerCase()}</b>
+          <span>Pick a court that has {meta.label.toLowerCase()}, or add it on the Courts tab.</span>
+        </div>
+      )}
       {court?.members_only && (
         <div className="notice">
           <b>{court.club ?? "Members"} only</b>
@@ -267,7 +277,7 @@ function HostInner() {
             </button>
           </div>
         )}
-        <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy || !!hosting}>
+        <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy || !!hosting || (!!court?.sports && !court.sports.includes(sport))}>
           {busy ? "Posting…" : `Find ${slots === 4 ? "3 players" : "1 player"} for ${meta.label.toLowerCase()}`}
         </button>
       </div>

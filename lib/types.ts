@@ -54,6 +54,7 @@ export type Court = {
   lit?: boolean;
   source?: string;
   club?: string | null;
+  sports?: Sport[];
 };
 
 export type Game = {

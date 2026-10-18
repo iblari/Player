@@ -6,9 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 import { getCoords, lastCoords, type Coords } from "@/lib/geo";
-import type { Court } from "@/lib/types";
+import { SPORTS, SPORT_META, type Court, type Sport } from "@/lib/types";
 import { miles } from "@/lib/util";
 import PlaceSearch from "@/components/PlaceSearch";
+import SportSwitch from "@/components/SportSwitch";
+import { useSession } from "@/components/Session";
+import { useSport } from "@/lib/sport";
 
 const CourtMap = dynamic(() => import("@/components/CourtMap"), { ssr: false, loading: () => <div className="map skeleton" /> });
 
@@ -17,6 +20,9 @@ const FALLBACK: Coords = { lat: 40.7128, lng: -74.006 }; // New York, used only 
 function CourtsInner() {
   const toast = useToast();
   const params = useSearchParams();
+  const { profile } = useSession();
+  const [sport, setSport] = useSport(profile?.sports);
+  const [sports, setSports] = useState<Sport[]>([]);
   const [me, setMe] = useState<Coords | null>(null);
   const [center, setCenter] = useState<Coords>(FALLBACK);
   const [courts, setCourts] = useState<Court[] | null>(null);
@@ -32,9 +38,15 @@ function CourtsInner() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const load = useCallback(async (c: Coords) => {
-    const { data } = await supabase().rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: 30 });
+    const { data } = await supabase().rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: 30, p_sport: sport });
     setCourts((data as Court[]) ?? []);
-  }, []);
+  }, [sport]);
+
+  // New courts default to the sport being browsed.
+  useEffect(() => setSports([sport]), [sport]);
+  useEffect(() => {
+    load(me ?? center);
+  }, [sport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const locate = useCallback(async () => {
     setLocErr(null);
@@ -65,6 +77,7 @@ function CourtsInner() {
     e.preventDefault();
     setErr(null);
     if (name.trim().length < 2) return setErr("Enter the court's name.");
+    if (!sports.length) return setErr("Pick at least one sport played here.");
     const near = courts?.find((c) => c.name.toLowerCase() === name.trim().toLowerCase() && c.distance_mi < 2);
     if (near) return setErr("That court is already listed nearby.");
     setBusy(true);
@@ -75,6 +88,7 @@ function CourtsInner() {
       p_count: count ? Number(count) : null,
       p_notes: notes,
       p_address: address,
+      p_sports: sports,
     });
     setBusy(false);
     if (error) return setErr("Couldn't add the court. Check the details and try again.");
@@ -94,7 +108,7 @@ function CourtsInner() {
       <div className="page-head">
         <div>
           <h1>Courts</h1>
-          <p className="sub">{courts ? `${courts.length} within 30 mi` : "Finding courts near you"}</p>
+          <p className="sub">{courts ? `${courts.length} ${SPORT_META[sport].label.toLowerCase()} court${courts.length === 1 ? "" : "s"} within 30 mi` : "Finding courts near you"}</p>
         </div>
         {!adding && (
           <button className="btn btn-sm" onClick={() => setAdding(true)}>
@@ -102,6 +116,8 @@ function CourtsInner() {
           </button>
         )}
       </div>
+
+      {!adding && <SportSwitch value={sport} onChange={setSport} />}
 
       {locErr && (
         <div className="notice">
@@ -139,6 +155,22 @@ function CourtsInner() {
               <input id="court-count" className="input" type="number" inputMode="numeric" min={1} max={60} placeholder="6" value={count} onChange={(e) => setCount(e.target.value)} />
             </label>
           </div>
+          <div className="field">
+            <span>Sports played here</span>
+            <div className="seg" role="group" aria-label="Sports played here">
+              {SPORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-pressed={sports.includes(s.id)}
+                  onClick={() => setSports((xs) => (xs.includes(s.id) ? xs.filter((x) => x !== s.id) : [...xs, s.id]))}
+                >
+                  {sports.includes(s.id) ? "✓ " : "+ "}
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="field">
             <span>Notes (optional)</span>
             <input id="court-notes" className="input" maxLength={140} placeholder="Lights until 10pm. Bring your own net." value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -162,7 +194,7 @@ function CourtsInner() {
               <span className="small muted">
                 {miles(sel.distance_mi)} away. {sel.available_players} available nearby, {sel.open_games} open game{sel.open_games === 1 ? "" : "s"}.
               </span>
-              <Link className="btn btn-sm btn-primary" href="/host">
+              <Link className="btn btn-sm btn-primary" href={`/host?court=${sel.id}&sport=${sport}`}>
                 Host a game here
               </Link>
             </div>
@@ -172,7 +204,7 @@ function CourtsInner() {
               <div className="skeleton" />
             ) : courts.length === 0 ? (
               <div className="empty">
-                <strong>No courts listed near you yet.</strong>
+                <strong>No {SPORT_META[sport].label.toLowerCase()} courts listed near you yet.</strong>
                 <span>Add the one you play at most. One busy court beats ten empty ones.</span>
                 <button className="btn btn-sm btn-primary" onClick={() => setAdding(true)}>
                   Add a court
