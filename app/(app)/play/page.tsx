@@ -8,6 +8,7 @@ import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
+import RecommendedCourts from "@/components/RecommendedCourts";
 import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
 import { getCoords } from "@/lib/geo";
@@ -36,6 +37,14 @@ export default function HomePage() {
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [busy, setBusy] = useState(false);
   const [showOpts, setShowOpts] = useState(false);
+  const [recommended, setRecommended] = useState<Court[] | null>(null);
+
+  useEffect(() => {
+    if (!coords) return;
+    supabase()
+      .rpc("recommended_courts", { lat: coords.lat, lng: coords.lng, p_limit: 8 })
+      .then(({ data }) => setRecommended((data as Court[]) ?? []));
+  }, [coords, courts]);
 
   const avail = isAvailable(profile);
   const firstName = profile?.display_name && !profile.display_name.includes("@") ? profile.display_name.split(" ")[0] : "";
@@ -230,6 +239,17 @@ export default function HomePage() {
             Yellow circles are players who are free right now, grouped by area. Tap a court to start a game there.
           </p>
         )}
+      </section>
+
+      <section className="block">
+        <div className="block-head">
+          <h2>Recommended courts</h2>
+          <Link href="/courts">See all</Link>
+        </div>
+        <RecommendedCourts courts={recommended} />
+        <p className="small muted" style={{ margin: 0, fontSize: 11 }}>
+          Court data includes © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors.
+        </p>
       </section>
 
       <section className="block">

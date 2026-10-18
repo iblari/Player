@@ -34,6 +34,12 @@ export type Court = {
   distance_mi: number;
   available_players: number;
   open_games: number;
+  town?: string | null;
+  kind?: string | null;
+  indoor?: boolean;
+  members_only?: boolean;
+  lit?: boolean;
+  source?: string;
 };
 
 export type Game = {

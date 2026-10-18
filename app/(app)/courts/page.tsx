@@ -195,8 +195,10 @@ function CourtsInner() {
                       <span className="row-title">{c.name}</span>
                       <span className="row-meta">
                         {miles(c.distance_mi)}
-                        {c.court_count ? `, ${c.court_count} courts` : ""}
-                        {c.notes ? `. ${c.notes}` : ""}
+                        {c.town ? ` · ${c.town}` : ""}
+                        {c.court_count ? ` · ${c.court_count} court${c.court_count > 1 ? "s" : ""}` : ""}
+                        {c.indoor ? " · Indoor" : ""}
+                        {c.members_only ? " · Members only" : ""}
                       </span>
                     </span>
                     <span style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
