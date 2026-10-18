@@ -7,7 +7,7 @@ import Avatar from "@/components/Avatar";
 import { SPORT_META, type Sport } from "@/lib/types";
 import { timeOf } from "@/lib/util";
 
-type Result = { team_a: string[]; team_b: string[]; score_a: number; score_b: number };
+type Result = { team_a: string[]; team_b: string[]; score_a: number; score_b: number; games?: [number, number][] | null };
 type Report = Result & { reporter_id: string; created_at: string };
 type Hist = { player_id: string; mu_before: number; mu_after: number; won: boolean };
 
@@ -53,8 +53,12 @@ export default function GameResult({
   const [hist, setHist] = useState<Hist[]>([]);
   const [partner, setPartner] = useState<string | null>(null);
   const [opp, setOpp] = useState<string | null>(null);
-  const [mine, setMine] = useState(sport === "tennis" ? 6 : 11);
-  const [theirs, setTheirs] = useState(sport === "tennis" ? 4 : 8);
+  // A session is several games (sets in tennis), each [mine, theirs].
+  const unit = sport === "tennis" ? "Set" : "Game";
+  const fresh: [number, number] = sport === "tennis" ? [6, 4] : [11, 8];
+  const [sets, setSets] = useState<[number, number][]>([fresh]);
+  const wonMine = sets.filter(([m, t]) => m > t).length;
+  const wonTheirs = sets.filter(([m, t]) => t > m).length;
   const [verdicts, setVerdicts] = useState<Record<string, -1 | 0 | 1>>({});
   const [again, setAgain] = useState<boolean | null>(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
@@ -68,10 +72,10 @@ export default function GameResult({
     const sb = supabase();
     // A waiting score past the host's 24 hours becomes final now (no-op otherwise).
     await sb.rpc("finalize_due", { p_game: gameId });
-    const { data: reps } = await sb.from("score_reports").select("reporter_id, team_a, team_b, score_a, score_b, created_at").eq("game_id", gameId).order("created_at");
+    const { data: reps } = await sb.from("score_reports").select("*").eq("game_id", gameId).order("created_at");
     setReports((reps as Report[]) ?? []);
     const [{ data: r, error: rErr }, { data: h }, { data: fb }, { data: pa }] = await Promise.all([
-      sb.from("game_results").select("team_a, team_b, score_a, score_b").eq("game_id", gameId).maybeSingle(),
+      sb.from("game_results").select("*").eq("game_id", gameId).maybeSingle(),
       sb.from("rating_history").select("player_id, mu_before, mu_after, won").eq("game_id", gameId),
       sb.from("level_feedback").select("ratee_id").eq("game_id", gameId).eq("rater_id", userId),
       sb.from("play_again").select("answer").eq("game_id", gameId).eq("rater_id", userId).maybeSingle(),
@@ -90,15 +94,22 @@ export default function GameResult({
   // Someone else's report, seen from my side of the net.
   const mine_ = reports.find((r) => r.reporter_id === userId);
   const others_ = reports.filter((r) => r.reporter_id !== userId);
-  const fromMySide = (r: Report) => {
+  const gamesOf = (r: Result): [number, number][] => (r.games?.length ? r.games : [[r.score_a, r.score_b]]);
+  const fromMySide = (r: Report | Result) => {
     const onA = r.team_a.includes(userId);
     const myTeam = onA ? r.team_a : r.team_b;
-    return { me: onA ? r.score_a : r.score_b, them: onA ? r.score_b : r.score_a, partner: myTeam.find((x) => x !== userId) ?? null, opp: (onA ? r.team_b : r.team_a)[0] };
+    const games = gamesOf(r).map(([a, b]) => (onA ? [a, b] : [b, a]) as [number, number]);
+    return {
+      me: onA ? r.score_a : r.score_b,
+      them: onA ? r.score_b : r.score_a,
+      games,
+      partner: myTeam.find((x) => x !== userId) ?? null,
+      opp: (onA ? r.team_b : r.team_a)[0],
+    };
   };
   const prefill = (r: Report) => {
     const s = fromMySide(r);
-    setMine(s.me);
-    setTheirs(s.them);
+    setSets(s.games);
     if (doubles) setPartner(s.partner);
     else setOpp(s.opp);
   };
@@ -123,9 +134,12 @@ export default function GameResult({
       a = [userId];
       b = [o];
     }
-    if (mine === theirs) return setErr(ERRORS.bad_score);
+    if (sets.some(([m, t]) => m === t)) return setErr(`A ${unit.toLowerCase()} can't be tied. Fix the score or remove that ${unit.toLowerCase()}.`);
     setBusy(true);
-    const { data, error } = await supabase().rpc("submit_result", { p_game: gameId, p_team_a: a, p_team_b: b, p_score_a: mine, p_score_b: theirs });
+    let { data, error } = await supabase().rpc("submit_results", { p_game: gameId, p_team_a: a, p_team_b: b, p_games: sets });
+    // Database without multi-game support: send one score (single game only).
+    if (isMissing(error) && sets.length === 1)
+      ({ data, error } = await supabase().rpc("submit_result", { p_game: gameId, p_team_a: a, p_team_b: b, p_score_a: sets[0][0], p_score_b: sets[0][1] }));
     setBusy(false);
     if (error) {
       const key = Object.keys(ERRORS).find((k) => error.message.includes(k));
@@ -159,16 +173,7 @@ export default function GameResult({
     return (
       <section className="block result">
         <h2>Score sent</h2>
-        <div className="final">
-          <div>
-            <span className="opt-label">{doubles ? "Your team" : "You"}</span>
-            <b className={s.me > s.them ? "win" : ""}>{s.me}</b>
-          </div>
-          <div>
-            <span className="opt-label">Them</span>
-            <b className={s.them > s.me ? "win" : ""}>{s.them}</b>
-          </div>
-        </div>
+        <GamesTable games={s.games} unit={unit} left={doubles ? "Your team" : "You"} right="Them" />
         <p className="small muted" style={{ margin: 0 }}>
           Waiting for {nameOf(hostId)} (host) to confirm. If they don&apos;t by {deadline.toDateString() === new Date().toDateString() ? "" : "tomorrow "}
           {timeOf(deadline)}, your score becomes final and ratings update.
@@ -188,7 +193,7 @@ export default function GameResult({
         {theirReport ? (
           <div className="notice" style={{ borderColor: "var(--ball)" }}>
             <b>
-              {nameOf(theirReport.reporter_id)} entered {fromMySide(theirReport).me}–{fromMySide(theirReport).them} (you–them)
+              {nameOf(theirReport.reporter_id)} entered {fromMySide(theirReport).games.map(([m, t]) => `${m}–${t}`).join(", ")} (you–them)
             </b>
             <span className="muted">It&apos;s filled in below. Confirm it, or fix it: as host, your score is the final one.</span>
           </div>
@@ -224,26 +229,54 @@ export default function GameResult({
             </div>
           )
         )}
-        <div className="scoreboard">
-          {[
-            { label: doubles ? "Your team" : "You", v: mine, set: setMine },
-            { label: "Them", v: theirs, set: setTheirs },
-          ].map((t) => (
-            <div key={t.label} className="score-side">
-              <span className="opt-label">{t.label}</span>
-              <div className="stepper">
-                <button type="button" aria-label={`Lower ${t.label} score`} disabled={t.v <= 0} onClick={() => t.set(t.v - 1)}>
-                  −
-                </button>
-                <output className="score-num">{t.v}</output>
-                <button type="button" aria-label={`Raise ${t.label} score`} disabled={t.v >= 99} onClick={() => t.set(t.v + 1)}>
-                  +
-                </button>
-              </div>
+        <div className="games-entry">
+          <div className="games-head">
+            <span />
+            <span className="opt-label">{doubles ? "Your team" : "You"}</span>
+            <span className="opt-label">Them</span>
+            <span />
+          </div>
+          {sets.map(([m, t], i) => (
+            <div className="games-row" key={i}>
+              <span className="games-n">{unit} {i + 1}</span>
+              {([0, 1] as const).map((side) => {
+                const v = side === 0 ? m : t;
+                const set = (nv: number) => setSets((xs) => xs.map((x, j) => (j === i ? ((side === 0 ? [nv, x[1]] : [x[0], nv]) as [number, number]) : x)));
+                return (
+                  <div key={side} className={`stepper stepper-sm${v > (side === 0 ? t : m) ? " lead" : ""}`}>
+                    <button type="button" aria-label={`Lower ${side === 0 ? "your" : "their"} ${unit.toLowerCase()} ${i + 1} score`} disabled={v <= 0} onClick={() => set(v - 1)}>
+                      −
+                    </button>
+                    <output className="score-num">{v}</output>
+                    <button type="button" aria-label={`Raise ${side === 0 ? "your" : "their"} ${unit.toLowerCase()} ${i + 1} score`} disabled={v >= 99} onClick={() => set(v + 1)}>
+                      +
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                className="games-x"
+                aria-label={`Remove ${unit.toLowerCase()} ${i + 1}`}
+                disabled={sets.length === 1}
+                onClick={() => setSets((xs) => xs.filter((_, j) => j !== i))}
+              >
+                ×
+              </button>
             </div>
           ))}
+          {sets.length < 9 && (
+            <button type="button" className="games-add" onClick={() => setSets((xs) => [...xs, fresh])}>
+              + Add {unit.toLowerCase()}
+            </button>
+          )}
+          {sets.length > 1 && (
+            <p className="games-sum">
+              {wonMine === wonTheirs ? `Level ${wonMine}–${wonTheirs}` : wonMine > wonTheirs ? `You won ${wonMine}–${wonTheirs}` : `You lost ${wonMine}–${wonTheirs}`}{" "}
+              <span className="muted">· ratings learn from every {unit.toLowerCase()}</span>
+            </p>
+          )}
         </div>
-        {sport === "tennis" && <span className="small muted">Tennis: enter games in a one-set match, or sets won.</span>}
         {err && <p className="err">{err}</p>}
         <button className="btn btn-ball btn-block" onClick={submitScore} disabled={busy}>
           {busy ? "Saving…" : isHost ? (theirReport ? "Confirm final score" : "Save final score") : mine_ ? "Update score" : "Send score"}
@@ -266,6 +299,9 @@ export default function GameResult({
           <b className={result.score_b > result.score_a ? "win" : ""}>{result.score_b}</b>
         </div>
       </div>
+      {gamesOf(result).length > 1 && (
+        <GamesTable games={gamesOf(result)} unit={unit} left={name(result.team_a)} right={name(result.team_b)} compact />
+      )}
       {me && (
         <div className="level-delta">
           <span>Your {meta.label.toLowerCase()} level</span>
@@ -317,5 +353,27 @@ export default function GameResult({
         </div>
       )}
     </section>
+  );
+}
+
+/** Game-by-game (or set-by-set) scores. */
+function GamesTable({ games, unit, left, right, compact }: { games: [number, number][]; unit: string; left: string; right: string; compact?: boolean }) {
+  return (
+    <div className={`games-table${compact ? " compact" : ""}`}>
+      <div className="games-head">
+        <span />
+        <span className="opt-label">{left}</span>
+        <span className="opt-label">{right}</span>
+      </div>
+      {games.map(([a, b], i) => (
+        <div className="games-line" key={i}>
+          <span className="games-n">
+            {unit} {i + 1}
+          </span>
+          <b className={a > b ? "win" : ""}>{a}</b>
+          <b className={b > a ? "win" : ""}>{b}</b>
+        </div>
+      ))}
+    </div>
   );
 }

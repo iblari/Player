@@ -26,6 +26,7 @@ export type Activity = {
   /** Owner only: this activity's own setting (null = default) and what actually applies. */
   visibility?: Vis | null;
   effective_visibility?: Vis | null;
+  games?: [number, number][] | null;
 };
 type Vis = "everyone" | "followers" | "private";
 
@@ -95,8 +96,14 @@ export default function ActivityCard({
     : players.map((p) => p.id);
 
   const kind = a.slots === 4 ? "doubles" : "singles";
-  const title =
-    a.won == null ? `${meta.label} ${kind}` : `${a.won ? "Won" : "Lost"} ${meta.label.toLowerCase()} ${kind}`;
+  const level = a.score_a != null && a.score_a === a.score_b;
+  const title = level
+    ? `Split ${meta.label.toLowerCase()} ${kind}`
+    : a.won == null
+      ? `${meta.label} ${kind}`
+      : `${a.won ? "Won" : "Lost"} ${meta.label.toLowerCase()} ${kind}`;
+  const unit = a.sport === "tennis" ? "sets" : "games";
+  const myGames = (a.games ?? []).map(([x, y]) => (onA ? [x, y] : [y, x]) as [number, number]);
 
   return (
     <article className="act">
@@ -170,7 +177,7 @@ export default function ActivityCard({
 
       <div className="act-stats">
         <div>
-          <span>Score</span>
+          <span>{myGames.length > 1 ? `${unit[0].toUpperCase()}${unit.slice(1)} won` : "Score"}</span>
           <b className={a.won ? "win" : ""}>{mine != null ? `${mine}–${theirs}` : "–"}</b>
         </div>
         <div>
@@ -185,6 +192,16 @@ export default function ActivityCard({
           </b>
         </div>
       </div>
+
+      {myGames.length > 1 && (
+        <div className="act-games" aria-label={`Scores by ${unit.slice(0, -1)}`}>
+          {myGames.map(([m, t], i) => (
+            <span key={i} className={m > t ? "w" : ""}>
+              {m}–{t}
+            </span>
+          ))}
+        </div>
+      )}
 
       <Link href={`/g/${a.game_id}`} className="act-court" aria-label="Open this game">
         <CourtDiagram slots={a.slots} players={seated.map((id) => ({ id, name: nameOf(id), isMe: id === ownerId }))} />

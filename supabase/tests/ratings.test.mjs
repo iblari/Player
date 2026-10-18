@@ -195,5 +195,39 @@ ok(theirs.length === 1 && theirs[0].game_id === g3, "a game marked Everyone show
 await set(P[0]);
 await expectErr(`select set_activity_visibility($1, 'everyone')`, [g3], "not_in_game");
 
+// --- Several games per session; host-only ending before start
+const MIG6 = new URL("../migrations/20261018200000_multi_game.sql", import.meta.url).pathname;
+await db.exec(readFileSync(MIG6, "utf8"));
+await db.exec(readFileSync(MIG6, "utf8"));
+ok(true, "multi-game migration applies (twice)");
+const multi = `select submit_results($1, $2::uuid[], $3::uuid[], $4::jsonb) as r`;
+const g5 = await mkGame(); // host P[2], player P[3]
+await set(P[2]);
+const before5 = (await db.query(`select mu from player_ratings where player_id = $1 and sport = 'pickleball'`, [P[2]])).rows[0]?.mu;
+st = (await db.query(multi, [g5, [P[2]], [P[3]], JSON.stringify([[11, 8], [9, 11], [11, 6]])])).rows[0].r;
+fin = (await db.query(`select * from game_results where game_id = $1`, [g5])).rows[0];
+ok(st.status === "final" && fin.score_a === 2 && fin.score_b === 1 && fin.games.length === 3, `3 games: final 2–1 with all games kept`);
+const after5 = (await db.query(`select mu_before, mu_after from rating_history where game_id = $1 and player_id = $2`, [g5, P[2]])).rows[0];
+ok(Math.abs(after5.mu_after - after5.mu_before) <= 0.5 + 1e-9, `session moved ≤ 0.5: ${after5.mu_before} → ${after5.mu_after}`);
+const g6 = await mkGame();
+await set(P[2]);
+await db.query(multi, [g6, [P[2]], [P[3]], JSON.stringify([[11, 9], [7, 11]])]);
+fin = (await db.query(`select * from game_results where game_id = $1`, [g6])).rows[0];
+ok(fin.score_a === 1 && fin.score_b === 1, "a 1–1 session is allowed");
+const g7 = await mkGame();
+await expectErr(multi, [g7, [P[2]], [P[3]], JSON.stringify([[11, 11]])], "bad_score");
+await expectErr(multi, [g7, [P[2]], [P[3]], JSON.stringify([])], "bad_score");
+await set(P[3]);
+ok((await db.query(`select submit_result($1, $2::uuid[], $3::uuid[], 11, 4) as r`, [g7, [P[3]], [P[2]]])).rows[0].r.status === "pending", "old one-score call still works");
+const g8 = (await db.query(`insert into games (host_id, court_id, slots, skill_min, skill_max, starts_at, expires_at, sport) values ($1, $2, 2, 2, 6, now() + interval '2 hours', now() + interval '3 hours', 'pickleball') returning id`, [P[2], court])).rows[0].id;
+await db.query(`insert into game_players (game_id, player_id) values ($1, $2), ($1, $3)`, [g8, P[2], P[3]]);
+await set(P[3]);
+await expectErr(`select end_game($1)`, [g8], "host_only");
+await set(P[2]);
+ok(!!(await db.query(`select end_game($1) as t`, [g8])).rows[0].t, "host can end before the start time");
+await set(P[3]);
+const act5 = (await db.query(`select games, won from player_activities($1) where game_id = $2`, [P[3], g5])).rows[0];
+ok(act5 && act5.games.length === 3 && act5.won === false, "activities include every game");
+
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
 process.exit(fails ? 1 : 0);

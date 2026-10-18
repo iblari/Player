@@ -141,7 +141,15 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const endGame = () =>
     act(async () => {
       const { error } = await supabase().rpc("end_game", { p_game: id });
-      toast(error ? (isMissing(error) ? "Ending games switches on with the next update." : "Couldn't end the game. Try again.") : "Game over. Enter the score below.");
+      toast(
+        error
+          ? isMissing(error)
+            ? "Ending games switches on with the next update."
+            : error.message.includes("host_only")
+              ? "Only the host can end it before the start time."
+              : "Couldn't end the game. Try again."
+          : "Game over. Enter the score below.",
+      );
     });
   const cancel = () =>
     act(async () => {
@@ -255,7 +263,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               {chat.unread > 0 && <span className="chat-dot" aria-label={`${chat.unread} unread`}>{chat.unread}</span>}
             </Link>
           )}
-          {inGame && !ended && (started || st === "full") && (
+          {/* Before the start time only the host can end it; after that, any player. */}
+          {inGame && !ended && (started || (isHost && st === "full")) && (
             <button className="btn btn-block btn-end" onClick={endGame} disabled={busy}>
               Mark game ended
             </button>

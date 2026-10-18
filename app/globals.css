@@ -853,3 +853,22 @@ a.mf-back { text-decoration: none; }
 .act-vis-menu button:hover { background: var(--sunk); }
 .act-vis-menu button b { margin-left: auto; color: var(--ball); }
 .act-vis-def { width: 16px; text-align: center; }
+
+/* ---------- Multi-game scores ---------- */
+.games-entry, .games-table { display: flex; flex-direction: column; gap: 8px; }
+.games-head, .games-row, .games-line { display: grid; grid-template-columns: 58px 1fr 1fr 30px; gap: 8px; align-items: center; }
+.games-table .games-head, .games-table .games-line { grid-template-columns: 70px 1fr 1fr; }
+.games-head .opt-label { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.games-n { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.stepper-sm { min-height: 48px; }
+.stepper-sm .score-num { font-size: 1.6rem; }
+.stepper-sm button { width: 34px; }
+.stepper.lead .score-num { color: var(--ball); }
+.games-x { width: 30px; height: 30px; border: 0; background: none; color: var(--faint); font-size: 20px; cursor: pointer; }
+.games-x:disabled { visibility: hidden; }
+.games-add { align-self: flex-start; border: 1px dashed var(--line); background: none; color: var(--ink); font: inherit; font-weight: 700; font-size: 14px; padding: 9px 14px; border-radius: 12px; cursor: pointer; }
+.games-sum { margin: 2px 0 0; font-weight: 800; font-size: 15px; }
+.games-line b { text-align: center; font-family: var(--f-display); font-size: 1.5rem; }
+.games-line b.win { color: var(--ball); }
+.games-table.compact { padding: 10px 12px; border-radius: 14px; background: var(--sunk); }
+.act-games { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -2px; } .act-games span { font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--sunk); color: var(--muted); } .act-games span.w { color: var(--ball); }
