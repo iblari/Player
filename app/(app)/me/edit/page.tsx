@@ -309,7 +309,7 @@ export default function EditProfilePage() {
               <span className="t">Game pings</span>
               <span className="m" style={{ whiteSpace: "normal" }}>
                 {push === "ios-install"
-                  ? "On iPhone, add Fourth Up to your Home Screen first (Share → Add to Home Screen), then open it from there."
+                  ? "On iPhone, add this app to your Home Screen first (Share → Add to Home Screen), then open it from there."
                   : push === "blocked"
                     ? "Blocked for this site. Allow notifications in your browser settings."
                     : push === "unsupported"

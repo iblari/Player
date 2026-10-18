@@ -8,10 +8,10 @@ const barlow = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"]
 const barlowCondensed = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-barlow-condensed" });
 
 export const metadata: Metadata = {
-  title: "Fourth Up",
+  title: "Let's Rally",
   description: "Find pickleball and tennis players near you. Go available, post a game at your court, and watch it fill.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Fourth Up", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Let's Rally", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

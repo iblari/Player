@@ -6,10 +6,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: "Fourth Up", body: event.data ? event.data.text() : "" };
+    data = { title: "Let's Rally", body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Fourth Up", {
+    self.registration.showNotification(data.title || "Let's Rally", {
       body: data.body || "A game near you needs players.",
       icon: "/icon-192.png",
       badge: "/icon-192.png",

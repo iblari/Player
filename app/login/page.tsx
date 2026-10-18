@@ -2,6 +2,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import RallyWordmark from "@/components/landing/RallyWordmark";
 import { supabase } from "@/lib/supabase/client";
 import AuthHashHandler from "@/components/AuthHashHandler";
 
@@ -96,8 +97,8 @@ function LoginForm() {
 
   return (
     <main className="shell bare" style={{ justifyContent: "center", maxWidth: 440 }}>
-      <Link href="/" className="wordmark" style={{ textDecoration: "none" }}>
-        <i aria-hidden="true" /> Fourth Up
+      <Link href="/" style={{ textDecoration: "none", color: "inherit", alignSelf: "flex-start" }} aria-label="Home">
+        <RallyWordmark />
       </Link>
       <AuthHashHandler />
       {sent ? (

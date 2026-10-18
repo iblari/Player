@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Fourth Up",
-    short_name: "Fourth Up",
+    name: "Let's Rally",
+    short_name: "Let's Rally",
     description: "Find pickleball and tennis players near you.",
     start_url: "/play",
     display: "standalone",

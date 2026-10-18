@@ -61,9 +61,7 @@ export default function Landing() {
       </section>
 
       <footer className="lp-foot">
-        <div className="wordmark" style={{ fontSize: "1.1rem" }}>
-          <i aria-hidden="true" style={{ width: 16, height: 16 }} /> Fourth Up
-        </div>
+        <RallyWordmark />
         <span>Pickleball and tennis players near you. More sports soon.</span>
         <span>
           Court and map data ©{" "}
