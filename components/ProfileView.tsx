@@ -211,7 +211,9 @@ export default function ProfileView({ userId: who }: { userId: string }) {
               Visible to: <b>{VIS[card.visibility]}</b> · change
             </Link>
           )}
-          {!card.can_see ? (
+          {acts === null ? (
+            <div className="skeleton" style={{ minHeight: 200 }} />
+          ) : acts.length === 0 && !card.can_see ? (
             <div className="empty">
               <strong>{card.display_name}&apos;s activities are {card.am_following ? "private" : "for followers"}.</strong>
               {!card.am_following && (
@@ -220,16 +222,28 @@ export default function ProfileView({ userId: who }: { userId: string }) {
                 </button>
               )}
             </div>
-          ) : acts === null ? (
-            <div className="skeleton" style={{ minHeight: 200 }} />
           ) : acts.length === 0 ? (
             <div className="empty">
-              <strong>{self ? "No games yet." : "No games yet."}</strong>
+              <strong>No games yet.</strong>
               <span>{self ? "Finish a game and enter the score: it shows up here, like a run on Strava." : "Their finished games will show up here."}</span>
               {self && <Link className="btn btn-sm btn-ball" href="/play">Find a game</Link>}
             </div>
           ) : (
-            acts.map((a) => <ActivityCard key={a.game_id} a={a} ownerId={card.id} ownerName={card.display_name || "Player"} ownerAvatar={card.avatar_url} />)
+            acts.map((a) => (
+              <ActivityCard
+                key={a.game_id}
+                a={a}
+                ownerId={card.id}
+                ownerName={card.display_name || "Player"}
+                ownerAvatar={card.avatar_url}
+                editable={self}
+                onVisibility={async (v) => {
+                  const { error } = await supabase().rpc("set_activity_visibility", { p_game: a.game_id, p_vis: v });
+                  if (error) return toast(isMissing(error) ? "Per-game visibility switches on with the next update." : "Couldn't change it. Try again.");
+                  setActs((xs) => (xs ?? []).map((x) => (x.game_id === a.game_id ? { ...x, visibility: v, effective_visibility: v ?? card.visibility } : x)));
+                }}
+              />
+            ))
           )}
         </div>
       ) : (

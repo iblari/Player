@@ -173,5 +173,27 @@ ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length =
 await set(P[3]);
 ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length >= 2, "you always see your own");
 
+// --- Per-activity visibility (globe)
+const MIG5 = new URL("../migrations/20261018190000_activity_visibility.sql", import.meta.url).pathname;
+await db.exec(readFileSync(MIG5, "utf8"));
+await db.exec(readFileSync(MIG5, "utf8"));
+ok(true, "activity visibility migration applies (twice)");
+await set(P[3]);
+await db.query(`update profiles set activity_visibility = 'everyone' where id = $1`, [P[3]]);
+await db.query(`select set_activity_visibility($1, 'private')`, [g4]);
+let mineAll = (await db.query(`select game_id, visibility, effective_visibility from player_activities($1)`, [P[3]])).rows;
+ok(mineAll.some((r) => r.game_id === g4 && r.visibility === "private"), "owner still sees the private one, with its setting");
+await set(P[2]);
+let theirs = (await db.query(`select game_id from player_activities($1)`, [P[3]])).rows;
+ok(!theirs.some((r) => r.game_id === g4) && theirs.length >= 1, "others don't see a game marked Only me");
+await set(P[3]);
+await db.query(`update profiles set activity_visibility = 'private' where id = $1`, [P[3]]);
+await db.query(`select set_activity_visibility($1, 'everyone')`, [g3]);
+await set(P[2]);
+theirs = (await db.query(`select game_id from player_activities($1)`, [P[3]])).rows;
+ok(theirs.length === 1 && theirs[0].game_id === g3, "a game marked Everyone shows even when the default is Only me");
+await set(P[0]);
+await expectErr(`select set_activity_visibility($1, 'everyone')`, [g3], "not_in_game");
+
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
 process.exit(fails ? 1 : 0);

@@ -843,3 +843,13 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .edit-top b { font-size: 1.05rem; }
 a.mf-back { text-decoration: none; }
 .roster-name { font-weight: 700; color: var(--ink); text-decoration: none; }
+.act-vis-wrap { position: relative; flex: none; }
+.act-vis { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--sunk); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.act-vis-private { color: var(--warn); }
+.act-vis-followers { color: #9fd3ff; }
+.act-vis-menu { position: absolute; right: 0; top: 40px; z-index: 30; min-width: 220px; padding: 6px; border-radius: 14px; background: var(--raised); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(0,0,0,.6); display: flex; flex-direction: column; }
+.act-vis-cap { font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: .06em; }
+.act-vis-menu button { display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: left; }
+.act-vis-menu button:hover { background: var(--sunk); }
+.act-vis-menu button b { margin-left: auto; color: var(--ball); }
+.act-vis-def { width: 16px; text-align: center; }

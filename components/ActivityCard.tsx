@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import CourtDiagram from "@/components/CourtDiagram";
@@ -22,12 +23,58 @@ export type Activity = {
   level_before: number | null;
   level_after: number | null;
   players: { id: string; name: string; avatar_url: string | null }[] | null;
+  /** Owner only: this activity's own setting (null = default) and what actually applies. */
+  visibility?: Vis | null;
+  effective_visibility?: Vis | null;
 };
+type Vis = "everyone" | "followers" | "private";
+
+const VIS_LABEL: Record<Vis, string> = { everyone: "Everyone", followers: "Followers", private: "Only me" };
+
+function VisIcon({ v }: { v: Vis }) {
+  const p = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  if (v === "private")
+    return (
+      <svg {...p}>
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </svg>
+    );
+  if (v === "followers")
+    return (
+      <svg {...p}>
+        <circle cx="9" cy="8" r="3.5" />
+        <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-2.5-5.1" />
+      </svg>
+    );
+  return (
+    <svg {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" />
+    </svg>
+  );
+}
 
 const dur = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ""}`.trim() : `${m}m`);
 
 /** One finished game, Strava-style: who, where, result, time on court, and the rating move. */
-export default function ActivityCard({ a, ownerId, ownerName, ownerAvatar }: { a: Activity; ownerId: string; ownerName: string; ownerAvatar: string | null }) {
+export default function ActivityCard({
+  a,
+  ownerId,
+  ownerName,
+  ownerAvatar,
+  editable,
+  onVisibility,
+}: {
+  a: Activity;
+  ownerId: string;
+  ownerName: string;
+  ownerAvatar: string | null;
+  editable?: boolean;
+  onVisibility?: (v: Vis | null) => void;
+}) {
+  const [menu, setMenu] = useState(false);
+  const eff = (a.effective_visibility ?? a.visibility ?? "everyone") as Vis;
   const meta = SPORT_META[a.sport] ?? SPORT_META.pickleball;
   const players = a.players ?? [];
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
@@ -63,6 +110,43 @@ export default function ActivityCard({ a, ownerId, ownerName, ownerAvatar }: { a
           </small>
         </span>
         <span className={`act-sport act-${a.sport}`}>{meta.label}</span>
+        {editable && (
+          <span className="act-vis-wrap">
+            <button className={`act-vis act-vis-${eff}`} onClick={() => setMenu((x) => !x)} aria-label={`Who can see this: ${VIS_LABEL[eff]}`} aria-expanded={menu}>
+              <VisIcon v={eff} />
+            </button>
+            {menu && (
+              <span className="act-vis-menu" role="menu">
+                <span className="act-vis-cap">Who can see this game</span>
+                {(["everyone", "followers", "private"] as Vis[]).map((v) => (
+                  <button
+                    key={v}
+                    role="menuitemradio"
+                    aria-checked={a.visibility === v}
+                    onClick={() => {
+                      setMenu(false);
+                      onVisibility?.(v);
+                    }}
+                  >
+                    <VisIcon v={v} /> {VIS_LABEL[v]}
+                    {a.visibility === v && <b>✓</b>}
+                  </button>
+                ))}
+                <button
+                  role="menuitemradio"
+                  aria-checked={!a.visibility}
+                  onClick={() => {
+                    setMenu(false);
+                    onVisibility?.(null);
+                  }}
+                >
+                  <span className="act-vis-def">↺</span> Use my default
+                  {!a.visibility && <b>✓</b>}
+                </button>
+              </span>
+            )}
+          </span>
+        )}
       </header>
 
       <Link href={`/g/${a.game_id}`} className="act-title">
