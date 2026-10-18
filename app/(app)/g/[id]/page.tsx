@@ -10,6 +10,8 @@ import Avatar from "@/components/Avatar";
 import MembershipPrompt from "@/components/MembershipPrompt";
 import GameResult from "@/components/GameResult";
 import { joinGame, saveAnswer } from "@/lib/membership";
+import { useUnread } from "@/lib/chat";
+import { ChatIcon } from "@/components/Icons";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, timeOf, when } from "@/lib/util";
@@ -71,6 +73,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     load();
   }, [load]);
   useLiveGames(load, { gameId: id });
+  // Chat opens once a second player is in. Only players in the game can use it.
+  const chatOn = !!userId && rows.length >= 2 && rows.some((r) => r.player_id === userId) && game?.status !== "cancelled";
+  const chat = useUnread(id, userId, chatOn);
 
   useEffect(() => {
     if (search.get("posted")) toast("Game posted. Players near the court were pinged.");
@@ -217,6 +222,13 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               I&apos;m in
             </button>
           ) : null}
+          {chatOn && !chat.missing && (
+            <Link className={`btn btn-block btn-chat${st === "full" ? " btn-ball" : ""}`} href={`/g/${id}/chat`}>
+              <ChatIcon />
+              {chat.count ? "Open group chat" : st === "full" ? "Start group chat" : "Message players"}
+              {chat.unread > 0 && <span className="chat-dot" aria-label={`${chat.unread} unread`}>{chat.unread}</span>}
+            </Link>
+          )}
           <div className="btn-row">
             <button className="btn" onClick={share}>
               Share invite

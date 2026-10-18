@@ -12,7 +12,7 @@ const TABS = [
 
 export default function TabBar() {
   const path = usePathname();
-  if (path.startsWith("/host")) return null;
+  if (path.startsWith("/host") || /^\/g\/[^/]+\/chat/.test(path)) return null;
   return (
     <nav className="tabbar" aria-label="Main">
       <div className="tabbar-inner">

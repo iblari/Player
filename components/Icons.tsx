@@ -62,3 +62,13 @@ export const PlusIcon = () => (
     <path d="M12 5v14M5 12h14" />
   </svg>
 );
+export const ChatIcon = () => (
+  <svg {...base}>
+    <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" />
+  </svg>
+);
+export const SendIcon = () => (
+  <svg {...base} strokeWidth={2.4}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
