@@ -110,5 +110,44 @@ const up = (await db.query(submit, [g2, [P[1]], [P[2]], 6, 2])).rows[0].r;
 const d = up.map((x) => Math.abs(x.after - x.before));
 ok(Math.max(...d) <= 0.5 + 1e-9, `upset capped at 0.5: ${up.map((x) => `${x.before}→${x.after}`).join(", ")}`);
 
+// --- Score reports: host's score wins; a non-host score becomes final after 24 h without the host
+await db.exec("create role anon; create table if not exists public.game_results_dummy (x int); drop table public.game_results_dummy;");
+const MIG3 = new URL("../migrations/20261018160000_score_reports.sql", import.meta.url).pathname;
+await db.exec(readFileSync(MIG3, "utf8"));
+await db.exec(readFileSync(MIG3, "utf8"));
+ok(true, "score reports migration applies (twice)");
+const mkGame = async () => {
+  const g = (await db.query(`insert into games (host_id, court_id, slots, skill_min, skill_max, starts_at, expires_at, sport) values ($1, $2, 2, 2, 6, now() - interval '1 hour', now(), 'pickleball') returning id`, [P[2], court])).rows[0].id;
+  await db.query(`insert into game_players (game_id, player_id) values ($1, $2), ($1, $3)`, [g, P[2], P[3]]);
+  return g;
+};
+const g3 = await mkGame();
+await set(P[3]);
+const ended = (await db.query(`select end_game($1) as t`, [g3])).rows[0].t;
+ok(!!ended, "a non-host player can mark the game ended");
+let st = (await db.query(submit, [g3, [P[3]], [P[2]], 11, 7])).rows[0].r;
+ok(st.status === "pending" && !!st.deadline, `non-host score waits for the host: ${JSON.stringify(st)}`);
+let fin = (await db.query(`select * from game_results where game_id = $1`, [g3])).rows;
+ok(fin.length === 0, "no final score or rating change yet");
+await set(P[2]);
+st = (await db.query(submit, [g3, [P[2]], [P[3]], 11, 9])).rows[0].r;
+fin = (await db.query(`select * from game_results where game_id = $1`, [g3])).rows;
+ok(st.status === "final" && fin.length === 1 && fin[0].team_a[0] === P[2] && fin[0].score_a === 11 && fin[0].score_b === 9, "host's different score wins and is final");
+await set(P[3]);
+await expectErr(submit, [g3, [P[3]], [P[2]], 11, 2], "already_scored");
+
+const g4 = await mkGame();
+await set(P[3]);
+st = (await db.query(submit, [g4, [P[3]], [P[2]], 11, 5])).rows[0].r;
+ok(!(await db.query(`select finalize_due($1) as f`, [g4])).rows[0].f, "finalize_due does nothing before 24 h");
+await db.query(`update score_reports set created_at = now() - interval '25 hours' where game_id = $1`, [g4]);
+ok((await db.query(`select finalize_due($1) as f`, [g4])).rows[0].f, "after 24 h without the host, finalize_due finalizes");
+fin = (await db.query(`select * from game_results where game_id = $1`, [g4])).rows;
+ok(fin.length === 1 && fin[0].team_a[0] === P[3] && fin[0].score_a === 11 && fin[0].score_b === 5, "non-host score is final after 24 h");
+const g4ended = (await db.query(`select ended_at from games where id = $1`, [g4])).rows[0].ended_at;
+ok(!!g4ended, "finalizing marks the game ended");
+await set(P[1]);
+await expectErr(`select end_game($1)`, [g4], "not_in_game");
+
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
 process.exit(fails ? 1 : 0);

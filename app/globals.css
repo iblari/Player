@@ -732,3 +732,4 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .join-btn { flex: none; height: 34px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--ball); color: var(--ball-ink); font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; }
 .pass-btn { flex: none; width: 28px; height: 34px; border: 0; background: none; color: var(--faint); font-size: 20px; cursor: pointer; margin-left: -6px; }
 .home-map { height: 220px; border-radius: 16px; }
+.btn-end { border: 1px solid var(--line); }

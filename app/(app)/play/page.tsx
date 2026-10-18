@@ -73,7 +73,7 @@ export default function HomePage() {
     setRecent((r as Recent[]) ?? []);
     const near = ((n as Nearby[]) ?? []).map((g) => ({ ...g, status: "open" as const, attendance_done: false, created_at: "", filled_at: null, court_lat: null, court_lng: null }));
     setGames(near);
-    const upcoming = mine.filter((g) => new Date(g.starts_at).getTime() > Date.now() - 90 * 60000).sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
+    const upcoming = mine.filter((g) => !g.ended_at && new Date(g.starts_at).getTime() > Date.now() - 90 * 60000).sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
     setNext(upcoming[0] ?? null);
     setPlayers(await fetchPlayers([...near, ...mine].flatMap((g) => g.player_ids)));
   }, [userId, sport]);

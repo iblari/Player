@@ -11,11 +11,12 @@ import MembershipPrompt from "@/components/MembershipPrompt";
 import GameResult from "@/components/GameResult";
 import { joinGame, saveAnswer } from "@/lib/membership";
 import { useUnread } from "@/lib/chat";
+import { isMissing } from "@/lib/rpc";
 import { ChatIcon } from "@/components/Icons";
 import PushPrompt from "@/components/PushPrompt";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
-import { fmtSkill, timeOf, when } from "@/lib/util";
+import { fmtSkill, pastLabel, timeOf, when } from "@/lib/util";
 
 type Row = { player_id: string; no_show: boolean; joined_at: string };
 type Rel = { player_id: string; games: number; showed: number };
@@ -108,11 +109,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const isHost = game.host_id === userId;
   const inGame = !!userId && ids.includes(userId);
   const started = new Date(game.starts_at).getTime() < Date.now();
+  const ended = !!game.ended_at || !!teams;
   const names = (pid: string) => nameOf(players, pid, userId);
   const url = typeof window !== "undefined" ? `${window.location.origin}/g/${game.id}` : "";
 
   const headline =
-    st === "full" ? "Game on" : st === "cancelled" ? "Cancelled" : st === "expired" ? "Didn't fill" : left === 1 ? "Need one more" : `Need ${left} more`;
+    ended ? "Game over" : st === "full" ? "Game on" : st === "cancelled" ? "Cancelled" : st === "expired" ? "Didn't fill" : left === 1 ? "Need one more" : `Need ${left} more`;
 
   async function act(fn: () => Promise<void>) {
     setBusy(true);
@@ -133,6 +135,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     act(async () => {
       const { data } = await supabase().rpc("leave_game", { p_game: id });
       toast(data === "left" ? "You left the game." : data === "started" ? "This game already started." : "Couldn't leave.");
+    });
+  const endGame = () =>
+    act(async () => {
+      const { error } = await supabase().rpc("end_game", { p_game: id });
+      toast(error ? (isMissing(error) ? "Ending games switches on with the next update." : "Couldn't end the game. Try again.") : "Game over. Enter the score below.");
     });
   const cancel = () =>
     act(async () => {
@@ -193,8 +200,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
       <div className="facts">
         <div className="fact">
-          <span>Starts</span>
-          <b>{when(game.starts_at)}</b>
+          <span>{ended ? "Played" : started ? "Started" : "Starts"}</span>
+          <b>{started ? pastLabel(game.starts_at) : when(game.starts_at)}</b>
         </div>
         <div className="fact">
           <span>{sportMeta.rating} level</span>
@@ -208,7 +215,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </div>
         <div className="fact">
           <span>{st === "open" ? "Request open until" : "Posted"}</span>
-          <b>{st === "open" ? timeOf(game.expires_at) : when(game.created_at)}</b>
+          <b>{st === "open" ? timeOf(game.expires_at) : pastLabel(game.created_at)}</b>
         </div>
       </div>
       {game.note && <p style={{ margin: 0 }}>&ldquo;{game.note}&rdquo; <span className="muted small">from {names(game.host_id)}</span></p>}
@@ -230,6 +237,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               {chat.count ? "Open group chat" : st === "full" ? "Start group chat" : "Message players"}
               {chat.unread > 0 && <span className="chat-dot" aria-label={`${chat.unread} unread`}>{chat.unread}</span>}
             </Link>
+          )}
+          {inGame && !ended && (started || st === "full") && (
+            <button className="btn btn-block btn-end" onClick={endGame} disabled={busy}>
+              Mark game ended
+            </button>
           )}
           <div className="btn-row">
             <button className="btn" onClick={share}>
@@ -261,10 +273,14 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                   <b>{names(pid)}</b>
                   {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
                   <div className="small muted">
-                    {levels[pid]?.level != null
-                      ? `${sportMeta.label} ${fmtSkill(levels[pid].level!)}${levels[pid].games ? ` · ${levels[pid].games} rated` : " · self-rated"}`
-                      : ""}
-                    {r ? `, shows up ${Math.round((r.showed / r.games) * 100)}% of ${r.games}` : ", new player"}
+                    {[
+                      levels[pid]?.level != null
+                        ? `${sportMeta.label} ${fmtSkill(levels[pid].level!)}${levels[pid].games ? ` · ${levels[pid].games} rated` : " · self-rated"}`
+                        : null,
+                      r ? `shows up ${Math.round((r.showed / r.games) * 100)}% of ${r.games}` : "new player",
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
                   </div>
                 </div>
               </div>
@@ -307,7 +323,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </section>
       )}
 
-      {userId && inGame && started && st !== "cancelled" && showed.length >= 2 && (
+      {userId && inGame && (started || ended) && st !== "cancelled" && showed.length >= 2 && (
         <GameResult
           gameId={game.id}
           sport={game.sport ?? "pickleball"}
@@ -316,6 +332,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           nameOf={names}
           avatarOf={(pid) => players[pid]?.avatar_url}
           onScored={load}
+          hostId={game.host_id}
         />
       )}
 

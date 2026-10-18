@@ -73,6 +73,7 @@ export type Game = {
   club?: string | null;
   created_at: string;
   filled_at: string | null;
+  ended_at?: string | null;
   sport: Sport;
 };
 
