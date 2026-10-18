@@ -9,7 +9,7 @@ const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 // The one address production should be seen on. Vercel also serves production on its own
 // *.vercel.app aliases; send those here so sign-ins, cookies and shared links stay on one domain.
 // Preview deployments (VERCEL_ENV=preview) keep their own URLs for testing.
-const CANONICAL_HOST = process.env.CANONICAL_HOST || "letslarp.io";
+const CANONICAL_HOST = process.env.CANONICAL_HOST || "www.letslarp.io";
 
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
