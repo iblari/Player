@@ -53,5 +53,17 @@ ok(r.rows?.map((x) => x.endpoint).join() === "e-b", "push goes only to the other
 r = await as(B, `select endpoint from chat_push_targets(${mid})`);
 ok(r.rows?.length === 0, "only the sender can trigger push for a message");
 
+// Match notifications
+await db.exec(readFileSync(new URL("../migrations/20261018140000_match_push.sql", import.meta.url), "utf8"));
+await db.exec("grant execute on all functions in schema public to authenticated;");
+ok(true, "match push migration applies");
+r = await as(B, `select endpoint from join_push_targets('${G1}')`);
+ok(r.rows?.map((x) => x.endpoint).join() === "e-a", "B just joined: push goes to A only");
+r = await as(C, `select endpoint from join_push_targets('${G1}')`);
+ok(r.rows?.length === 0, "outsider can't trigger join pushes");
+await db.exec(`update game_players set joined_at = now() - interval '10 minutes' where player_id = '${B}'`);
+r = await as(B, `select endpoint from join_push_targets('${G1}')`);
+ok(r.rows?.length === 0, "stale join can't re-trigger pushes");
+
 console.log(fails ? `${fails} failed` : "all passed");
 process.exit(fails ? 1 : 0);

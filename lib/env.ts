@@ -7,4 +7,4 @@ export const SUPABASE_KEY =
 // Web Push public key (safe to ship). The matching private key lives only in VAPID_PRIVATE_KEY.
 export const VAPID_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ??
-  "BKeuhMVTdW1S7J3iDNjZwP6YgZgsWDava-YxAnLHd2MKo93sDXdZI5PKKRK7JJXuFdf3Bla2qV0hB1W7Kdz-aYI";
+  "BIYYLnapaiu5U981ha5jM0H6MXe6k8NcpJkHkEwyypm4j31tL5ufnldIG3hQXQE2mNAf_YY9q8y0j19N72rsrOE";

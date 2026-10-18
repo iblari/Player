@@ -12,6 +12,7 @@ import GameResult from "@/components/GameResult";
 import { joinGame, saveAnswer } from "@/lib/membership";
 import { useUnread } from "@/lib/chat";
 import { ChatIcon } from "@/components/Icons";
+import PushPrompt from "@/components/PushPrompt";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, timeOf, when } from "@/lib/util";
@@ -187,6 +188,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <span className="muted">{game.club ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.` : "Private court. Players confirm they're members or a member's guest before joining."}</span>
         </div>
       )}
+      {userId && inGame && !started && (st === "open" || st === "full") && <PushPrompt userId={userId} waiting={st === "open"} />}
       <CourtDiagram slots={game.slots} players={seated.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
 
       <div className="facts">

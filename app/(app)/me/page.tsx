@@ -5,14 +5,13 @@ import { supabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
-import { VAPID_PUBLIC_KEY } from "@/lib/env";
-import { fmtSkill, urlBase64ToUint8Array } from "@/lib/util";
+import { fmtSkill } from "@/lib/util";
+import { disablePush, enablePush, pushState, type PushState } from "@/lib/push";
 import { levelToSkill, selfLevel, SPORT_META, skillToLevel, SPORTS, type Sport } from "@/lib/types";
 import { useMyRatings } from "@/lib/sport";
 
 const KNOWN_CLUBS = ["Life Time", "Equinox"];
 
-type PushState = "unsupported" | "ios-install" | "off" | "on" | "blocked";
 
 const LEVEL_HINTS: Record<Sport, string[]> = {
   pickleball: ["Brand new", "Learning to serve and return", "Learning the rules", "Can rally from the baseline", "Consistent dinks",
@@ -57,16 +56,8 @@ export default function MePage() {
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    (async () => {
-      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const standalone = window.matchMedia("(display-mode: standalone)").matches;
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return setPush(ios && !standalone ? "ios-install" : "unsupported");
-      if (Notification.permission === "denied") return setPush("blocked");
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      setPush(sub ? "on" : "off");
-    })();
-  }, []);
+    pushState(userId).then(setPush);
+  }, [userId]);
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -114,30 +105,18 @@ export default function MePage() {
     toast(e2 ?? "Profile saved.");
   }
 
-  async function enablePush() {
+  async function turnOnPush() {
     if (!userId) return;
     try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") return setPush(perm === "denied" ? "blocked" : "off");
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource });
-      const j = sub.toJSON();
-      const { error } = await supabase().from("push_subscriptions").upsert({ endpoint: sub.endpoint, user_id: userId, p256dh: j.keys!.p256dh, auth: j.keys!.auth });
-      if (error) throw error;
-      setPush("on");
-      toast("Notifications on. You'll get pinged while you're available.");
+      const st = await enablePush(userId);
+      setPush(st);
+      if (st === "on") toast("Notifications on. You'll hear when your games fill.");
     } catch {
       toast("Couldn't turn on notifications. Try again.");
     }
   }
-  async function disablePush() {
-    const reg = await navigator.serviceWorker.getRegistration();
-    const sub = await reg?.pushManager.getSubscription();
-    if (sub) {
-      await supabase().from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-      await sub.unsubscribe();
-    }
+  async function turnOffPush() {
+    await disablePush();
     setPush("off");
     toast("Notifications off.");
   }
@@ -286,7 +265,7 @@ export default function MePage() {
                     ? "Blocked for this site. Allow notifications in your browser settings."
                     : push === "unsupported"
                       ? "This browser can't receive notifications. Try Chrome, or Safari from your Home Screen."
-                      : "Get pinged when a game near you needs your level, only while you're available."}
+                      : "When someone joins your game, when it's game on, and when a game near you needs your level while you're available."}
               </span>
             </span>
             {(push === "on" || push === "off") && (
@@ -296,7 +275,7 @@ export default function MePage() {
                 role="switch"
                 aria-checked={push === "on"}
                 aria-label="Game pings"
-                onClick={() => (push === "on" ? disablePush() : enablePush())}
+                onClick={() => (push === "on" ? turnOffPush() : turnOnPush())}
               />
             )}
           </div>
