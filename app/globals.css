@@ -177,7 +177,7 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 .switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%; background: var(--muted); transition: left 0.18s ease; }
 .avail-strip.on .switch { background: var(--ball-ink); }
 .avail-strip.on .switch::after { left: 26px; background: var(--ball); }
-.avail-opts { display: flex; flex-direction: column; gap: 10px; }
+.avail-opts { display: flex; flex-direction: column; gap: 18px; padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
 .avail-opts .seg button { background: var(--surface); }
 .avail-opts .seg button[aria-pressed="true"] { background: var(--ink); color: #000; }
 
@@ -374,3 +374,18 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 18px;
   border-radius: 999px; background: var(--raised); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.5); font-weight: 600; font-size: var(--s-1);
   animation: sheet-up 0.2s ease-out; }
+
+/* ---------- Availability options ---------- */
+.opt-group { display: flex; flex-direction: column; gap: 10px; }
+.opt-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; }
+.segbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--sunk); }
+.segbar-5 { grid-template-columns: repeat(5, 1fr); }
+.segbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 2px;
+  border: 0; border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; transition: background 0.15s, color 0.15s; }
+.segbar button b { font-size: 1rem; font-weight: 700; white-space: nowrap; }
+.segbar button small { font-size: 0.72rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.segbar button[aria-pressed="true"] { background: var(--ink); color: #000; }
+.segbar button[aria-pressed="true"] small { color: rgba(0,0,0,0.6); }
+.segbar button:disabled { opacity: 0.6; }
+.until-row { display: flex; gap: 8px; }
+.until-row .input { flex: 1; min-width: 0; color-scheme: dark; }

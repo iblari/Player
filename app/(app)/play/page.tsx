@@ -34,6 +34,12 @@ export default function HomePage() {
   const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
+  const [dur, setDur] = useState<number | "pick" | null>(null);
+  const [untilTime, setUntilTime] = useState(() => {
+    const d = new Date(Date.now() + 2 * 3600e3);
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  });
   const [games, setGames] = useState<GameView[] | null>(null);
   const [next, setNext] = useState<GameView | null>(null);
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
@@ -90,12 +96,21 @@ export default function HomePage() {
           ? `${plural(courts.length, "court")} within 15 mi`
           : "Finding courts near you";
 
-  async function goAvailable(h = 2) {
+  function untilFromTime(t: string) {
+    const [hh, mm] = t.split(":").map(Number);
+    const d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    if (d.getTime() < Date.now() + 10 * 60e3) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  async function goAvailable(h: number | Date = 2) {
+    const untilDate = h instanceof Date ? h : new Date(Date.now() + h * 3600e3);
+    if (untilDate.getTime() - Date.now() > 16 * 3600e3) return toast("Pick a time within the next 16 hours.");
     setBusy(true);
     try {
       const c = await getCoords();
       await supabase().rpc("set_location", { lat: c.lat, lng: c.lng });
-      const until = new Date(Date.now() + h * 3600e3).toISOString();
+      const until = untilDate.toISOString();
       const err = await update({ available_until: until });
       await refresh();
       toast(err ?? `You're available until ${timeOf(until)}.`);
@@ -189,19 +204,47 @@ export default function HomePage() {
         </div>
         {showOpts && (
           <div className="avail-opts">
-            <div className="seg" aria-label="Available for">
-              {HOURS.map((h) => (
-                <button key={h} onClick={() => goAvailable(h)} disabled={busy}>
-                  {h} hr{h > 1 ? "s" : ""}
+            <div className="opt-group">
+              <span className="opt-label">Free for</span>
+              <div className="segbar segbar-5" role="group" aria-label="Available for">
+                {HOURS.map((h) => (
+                  <button
+                    key={h}
+                    aria-pressed={dur === h}
+                    disabled={busy}
+                    onClick={() => {
+                      setDur(h);
+                      goAvailable(h);
+                    }}
+                  >
+                    <b>{h} hr{h > 1 ? "s" : ""}</b>
+                    <small>{timeOf(new Date(Date.now() + h * 3600e3))}</small>
+                  </button>
+                ))}
+                <button aria-pressed={dur === "pick"} onClick={() => setDur("pick")}>
+                  <b>Until</b>
+                  <small>pick time</small>
                 </button>
-              ))}
+              </div>
+              {dur === "pick" && (
+                <div className="until-row">
+                  <input className="input" type="time" step={900} value={untilTime} onChange={(e) => setUntilTime(e.target.value)} aria-label="Available until" />
+                  <button className="btn btn-primary" disabled={busy || !untilTime} onClick={() => goAvailable(untilFromTime(untilTime))}>
+                    Set
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="seg" aria-label="Distance">
-              {RADII.map((r) => (
-                <button key={r} aria-pressed={profile?.radius_mi === r} onClick={() => update({ radius_mi: r })}>
-                  {r} mi
-                </button>
-              ))}
+            <div className="opt-group">
+              <span className="opt-label">Ping me for games within</span>
+              <div className="segbar" role="group" aria-label="Distance">
+                {RADII.map((r) => (
+                  <button key={r} aria-pressed={profile?.radius_mi === r} onClick={() => update({ radius_mi: r })}>
+                    <b>{r}</b>
+                    <small>miles</small>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
