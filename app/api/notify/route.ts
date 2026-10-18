@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
   const [{ data: targets }, { data: game }] = await Promise.all([
     sb.rpc("push_targets", { p_game: gameId }),
-    sb.from("games").select("slots, skill_min, skill_max, starts_at, courts(name)").eq("id", gameId).maybeSingle(),
+    sb.from("games").select("slots, skill_min, skill_max, starts_at, sport, courts(name)").eq("id", gameId).maybeSingle(),
   ]);
   if (!game || !targets?.length) return NextResponse.json({ sent: 0 });
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const mins = Math.round((start.getTime() - Date.now()) / 60000);
   const when = mins <= 20 ? "starting now" : start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
   const payload = JSON.stringify({
-    title: `${game.slots === 4 ? "Doubles" : "Singles"} at ${court}`,
+    title: `${game.sport === "tennis" ? "Tennis" : "Pickleball"} ${game.slots === 4 ? "doubles" : "singles"} at ${court}`,
     body: `${when}, rated ${Number(game.skill_min).toFixed(2)}–${Number(game.skill_max).toFixed(2)}. Tap to grab a spot.`,
     url: `/g/${gameId}`,
     tag: `game-${gameId}`,

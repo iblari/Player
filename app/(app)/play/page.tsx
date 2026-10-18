@@ -11,12 +11,14 @@ import LocationSheet from "@/components/LocationSheet";
 import MembershipPrompt from "@/components/MembershipPrompt";
 import { joinGame, saveAnswer } from "@/lib/membership";
 import RecommendedCourts from "@/components/RecommendedCourts";
+import SportSwitch from "@/components/SportSwitch";
+import { useSport } from "@/lib/sport";
 import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
 import { getCoords } from "@/lib/geo";
 import { useNearby } from "@/lib/nearby";
 import { fetchMyGames, fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames, type GameView } from "@/lib/games";
-import { isAvailable, type Court, type PlayerLite } from "@/lib/types";
+import { isAvailable, SPORT_META, type Court, type PlayerLite } from "@/lib/types";
 import { fmtSkill, miles, timeOf, when } from "@/lib/util";
 
 const PlayerMap = dynamic(() => import("@/components/PlayerMap"), { ssr: false });
@@ -47,6 +49,8 @@ export default function HomePage() {
   const [showOpts, setShowOpts] = useState(false);
   const [ask, setAsk] = useState<GameView | null>(null);
   const [recommended, setRecommended] = useState<Court[] | null>(null);
+  const [sport, setSport] = useSport(profile?.sports);
+  const sportLabel = SPORT_META[sport].label;
 
   useEffect(() => {
     if (!coords) return;
@@ -138,10 +142,11 @@ export default function HomePage() {
     await supabase().from("game_passes").insert({ game_id: id, player_id: userId });
   }
   function pick(c: Court) {
-    router.push(`/host?court=${c.id}${sheet === "later" ? "&when=later" : ""}`);
+    router.push(`/host?court=${c.id}&sport=${sport}${sheet === "later" ? "&when=later" : ""}`);
   }
 
   const names = (id: string) => nameOf(players, id, userId);
+  const visible = games?.filter((g) => (g.sport ?? "pickleball") === sport) ?? null;
 
   return (
     <>
@@ -157,10 +162,12 @@ export default function HomePage() {
         </Link>
       </div>
 
+      <SportSwitch value={sport} onChange={setSport} />
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="search-pill" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>
           <SearchIcon />
-          <span className="label">Pick a location to play</span>
+          <span className="label">Where are you playing {sportLabel.toLowerCase()}?</span>
           <button
             className="later"
             onClick={(e) => {
@@ -175,7 +182,7 @@ export default function HomePage() {
         {recents.length > 0 && (
           <div className="list">
             {recents.map((r) => (
-              <Link key={r.id} className="list-row" href={`/host?court=${r.id}`}>
+              <Link key={r.id} className="list-row" href={`/host?court=${r.id}&sport=${sport}`}>
                 <span className="icon-circle">
                   <ClockIcon />
                 </span>
@@ -311,24 +318,24 @@ export default function HomePage() {
 
       <section className="block">
         <div className="block-head">
-          <h2>Games that need you</h2>
-          <span className="count">{games?.length || ""}</span>
+          <h2>{sportLabel} games that need you</h2>
+          <span className="count">{visible?.length || ""}</span>
         </div>
-        {games === null ? (
+        {visible === null ? (
           <div className="skeleton" />
         ) : !profile?.location ? (
           <div className="empty">
             <strong>Go available once to see games near you.</strong>
             <span>It saves where you are so hosts nearby can find you.</span>
           </div>
-        ) : games.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="empty">
-            <strong>No open games within {profile?.radius_mi} mi at your level.</strong>
+            <strong>No open {sportLabel.toLowerCase()} games within {profile?.radius_mi} mi at your level.</strong>
             <span>Pick a court above and be the first.</span>
           </div>
         ) : (
           <div className="hscroll">
-            {games.map((g) => {
+            {visible.map((g) => {
               const left = g.slots - g.player_ids.length;
               return (
                 <div className="gcard" key={g.id}>

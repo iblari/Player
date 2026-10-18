@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:db": "node supabase/tests/ratings.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -18,11 +19,13 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@types/leaflet": "^1.9.17",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@types/web-push": "^3.6.4",
+    "ts-trueskill": "^5.1.0",
     "typescript": "^5.8.3"
   }
 }

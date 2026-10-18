@@ -16,6 +16,18 @@ export const SPORTS: { id: Sport; label: string }[] = [
   { id: "tennis", label: "Tennis" },
 ];
 
+/** Rating scale per sport. Matches public.sport_params / public.self_level in SQL. */
+export const SPORT_META: Record<Sport, { label: string; rating: string; lo: number; hi: number }> = {
+  pickleball: { label: "Pickleball", rating: "DUPR", lo: 2, hi: 8 },
+  tennis: { label: "Tennis", rating: "NTRP", lo: 1.5, hi: 7 },
+};
+
+/** Self-rated 1-10 level -> the sport's rating scale (the prior before scored games). */
+export function selfLevel(sport: Sport, level: number): number {
+  if (sport === "tennis") return Math.round((1.5 + ((level - 1) * 5) / 9) * 4) / 4;
+  return levelToSkill(level);
+}
+
 /** Self-rated 1-10 pickleball level <-> DUPR-style 2.0-5.5 used for matching. */
 export function levelToSkill(level: number): number {
   return Math.round((2 + ((level - 1) * 3.5) / 9) * 4) / 4;
@@ -60,6 +72,7 @@ export type Game = {
   club?: string | null;
   created_at: string;
   filled_at: string | null;
+  sport: Sport;
 };
 
 export type PlayerLite = { id: string; display_name: string; skill: number; avatar_url?: string | null };

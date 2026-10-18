@@ -6,8 +6,8 @@ export function fmtSkill(s: number | string): string {
   return n % 0.5 === 0 ? n.toFixed(1) : n.toFixed(2);
 }
 
-export function clampSkill(s: number): number {
-  return Math.min(5.5, Math.max(2, Math.round(s * 4) / 4));
+export function clampSkill(s: number, lo = 2, hi = 5.5): number {
+  return Math.min(hi, Math.max(lo, Math.round(s * 4) / 4));
 }
 
 export function timeOf(iso: string | number | Date): string {

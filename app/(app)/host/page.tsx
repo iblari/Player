@@ -7,10 +7,12 @@ import { useSession } from "@/components/Session";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
 import MembershipPrompt from "@/components/MembershipPrompt";
+import SportSwitch from "@/components/SportSwitch";
+import { useMyRatings, useSport } from "@/lib/sport";
 import { saveAnswer } from "@/lib/membership";
 import { BackIcon, PinIcon } from "@/components/Icons";
 import { useNearby } from "@/lib/nearby";
-import type { Court } from "@/lib/types";
+import { SPORT_META, type Court } from "@/lib/types";
 import { clampSkill, fillChance, fmtSkill, miles, timeOf, when, YES_RATE_AVAILABLE, YES_RATE_NEARBY } from "@/lib/util";
 
 const PlayerMap = dynamic(() => import("@/components/PlayerMap"), { ssr: false });
@@ -31,6 +33,11 @@ function HostInner() {
   const params = useSearchParams();
   const { profile, userId } = useSession();
   const { courts, cells } = useNearby(25);
+  const [sport, setSport] = useSport(profile?.sports, params.get("sport"));
+  const meta = SPORT_META[sport];
+  const ratings = useMyRatings(userId);
+  const myLevel = ratings ? (ratings[sport]?.level ?? null) : undefined;
+  const clamp = (x: number) => clampSkill(x, meta.lo, meta.hi);
   const [courtId, setCourtId] = useState(params.get("court") ?? "");
   const [sheet, setSheet] = useState(!params.get("court"));
   const [slots, setSlots] = useState<2 | 4>(4);
@@ -53,12 +60,13 @@ function HostInner() {
       .then(({ data }) => setHosting(((data as { id: string; court_name: string; starts_at: string; status: string }[]) ?? [])[0] ?? null));
   }, []);
 
+  // Default the rating range to my level in this sport, ±0.25.
   useEffect(() => {
-    if (profile) {
-      setMin(clampSkill(Number(profile.skill) - 0.25));
-      setMax(clampSkill(Number(profile.skill) + 0.25));
-    }
-  }, [profile?.skill]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (myLevel === undefined) return;
+    const base = myLevel ?? 3.25;
+    setMin(clamp(base - 0.25));
+    setMax(clamp(base + 0.25));
+  }, [sport, myLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A court picked from history may be outside the nearby list; fetch its point.
   const court = courts?.find((c) => c.id === courtId) ?? (extra?.id === courtId ? extra : null);
@@ -79,12 +87,12 @@ function HostInner() {
     if (!courtId) return;
     let live = true;
     supabase()
-      .rpc("fill_supply", { p_court: courtId, p_min: min, p_max: max })
+      .rpc("fill_supply", { p_court: courtId, p_min: min, p_max: max, p_sport: sport })
       .then(({ data }) => live && setSupply((data as { available: number; nearby: number }[])?.[0] ?? { available: 0, nearby: 0 }));
     return () => {
       live = false;
     };
-  }, [courtId, min, max]);
+  }, [courtId, min, max, sport]);
 
   const startsAt = useMemo(() => {
     if (start === "pick") return picked ? new Date(picked) : null;
@@ -109,6 +117,7 @@ function HostInner() {
       p_starts: startsAt.toISOString(),
       p_note: note,
       p_confirmed: confirmed,
+      p_sport: sport,
     });
     if (error?.message?.includes("already_hosting")) {
       setBusy(false);
@@ -147,6 +156,14 @@ function HostInner() {
           )}
         </div>
       </div>
+
+      <SportSwitch value={sport} onChange={setSport} />
+      {myLevel === null && (
+        <div className="notice">
+          <b>You haven&apos;t added {meta.label.toLowerCase()} yet</b>
+          <span className="muted">Add it on your Account page so you get matched and pinged for {meta.label.toLowerCase()} games.</span>
+        </div>
+      )}
 
       <button className="list-row" style={{ border: "1px solid var(--line)", borderRadius: 16, background: "var(--surface)" }} onClick={() => setSheet(true)}>
         <span className="icon-circle">
@@ -208,7 +225,7 @@ function HostInner() {
 
       <section className="block">
         <div className="block-head">
-          <h2>Rating</h2>
+          <h2>{meta.rating} level</h2>
           <button className="btn btn-ghost btn-sm" onClick={() => setEditRange((x) => !x)}>
             {fmtSkill(min)}–{fmtSkill(max)} · {editRange ? "Done" : "Edit"}
           </button>
@@ -216,14 +233,14 @@ function HostInner() {
         {editRange && (
           <div className="btn-row">
             <div className="stepper" aria-label="Lowest rating">
-              <button aria-label="Lower minimum" disabled={min <= 2} onClick={() => setMin(clampSkill(min - 0.25))}>−</button>
+              <button aria-label="Lower minimum" disabled={min <= meta.lo} onClick={() => setMin(clamp(min - 0.25))}>−</button>
               <output>{fmtSkill(min)}</output>
-              <button aria-label="Raise minimum" disabled={min >= max} onClick={() => setMin(clampSkill(min + 0.25))}>+</button>
+              <button aria-label="Raise minimum" disabled={min >= max} onClick={() => setMin(clamp(min + 0.25))}>+</button>
             </div>
             <div className="stepper" aria-label="Highest rating">
-              <button aria-label="Lower maximum" disabled={max <= min} onClick={() => setMax(clampSkill(max - 0.25))}>−</button>
+              <button aria-label="Lower maximum" disabled={max <= min} onClick={() => setMax(clamp(max - 0.25))}>−</button>
               <output>{fmtSkill(max)}</output>
-              <button aria-label="Raise maximum" disabled={max >= 5.5} onClick={() => setMax(clampSkill(max + 0.25))}>+</button>
+              <button aria-label="Raise maximum" disabled={max >= meta.hi} onClick={() => setMax(clamp(max + 0.25))}>+</button>
             </div>
           </div>
         )}
@@ -251,7 +268,7 @@ function HostInner() {
           </div>
         )}
         <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy || !!hosting}>
-          {busy ? "Posting…" : `Find ${slots === 4 ? "3 players" : "1 player"}`}
+          {busy ? "Posting…" : `Find ${slots === 4 ? "3 players" : "1 player"} for ${meta.label.toLowerCase()}`}
         </button>
       </div>
 
@@ -261,7 +278,7 @@ function HostInner() {
           onPick={(c) => {
             setCourtId(c.id);
             setSheet(false);
-            router.replace(`/host?court=${c.id}${start === "pick" ? "&when=later" : ""}`);
+            router.replace(`/host?court=${c.id}&sport=${sport}${start === "pick" ? "&when=later" : ""}`);
           }}
           onClose={() => (courtId ? setSheet(false) : router.back())}
         />
