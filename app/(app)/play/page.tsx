@@ -197,7 +197,7 @@ export default function HomePage() {
           <button className="grow" style={{ background: "none", border: 0, padding: 0, textAlign: "left", color: "inherit", cursor: "pointer" }} onClick={() => setShowOpts((x) => !x)} aria-expanded={showOpts}>
             <b>{avail ? "You're down to play" : "Not available"}</b>
             <span>
-              {avail ? `Until ${timeOf(profile!.available_until!)} · within ${profile!.radius_mi} mi · tap to change` : "Turn on so hosts nearby can ping you"}
+              {avail ? `Until ${timeOf(profile!.available_until!)} · within ${profile!.radius_mi} mi · tap to change` : "Turn on so players nearby can ping you"}
             </span>
           </button>
           <button className="switch" role="switch" aria-checked={avail} aria-label={avail ? "Stop being available" : "Go available"} disabled={busy} onClick={() => (avail ? stop() : goAvailable())} />
