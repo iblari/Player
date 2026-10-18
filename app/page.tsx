@@ -3,6 +3,7 @@ import AuthHashHandler from "@/components/AuthHashHandler";
 import HeroVideo from "@/components/landing/HeroVideo";
 import NearYouMap from "@/components/landing/NearYouMap";
 import HowItWorks from "@/components/landing/HowItWorks";
+import RallyWordmark from "@/components/landing/RallyWordmark";
 
 export default function Landing() {
   return (
@@ -12,9 +13,7 @@ export default function Landing() {
       <section className="lp-hero">
         <HeroVideo />
         <header className="lp-top">
-          <div className="wordmark">
-            <i aria-hidden="true" /> Fourth Up
-          </div>
+          <RallyWordmark />
           <Link className="lp-signin" href="/login">
             Sign in
           </Link>

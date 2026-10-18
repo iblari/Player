@@ -591,3 +591,9 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .btn-google:hover { background: #f2f2f2; }
 .or-divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: var(--s-1); }
 .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Landing wordmark: rotating "let's play" in several languages */
+.lp-word-slot { display: inline-grid; overflow: hidden; height: 1.25em; line-height: 1.25em; }
+.lp-word { white-space: nowrap; animation: lp-word-in .45s cubic-bezier(.2,.8,.2,1) both; }
+.lp-word:lang(zh), .lp-word:lang(ur), .lp-word:lang(hi) { font-family: var(--f-body); font-weight: 700; }
+@keyframes lp-word-in { from { transform: translateY(70%); opacity: 0; } to { transform: none; opacity: 1; } }
