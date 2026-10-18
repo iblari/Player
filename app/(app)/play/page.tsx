@@ -31,7 +31,7 @@ export default function HomePage() {
   const router = useRouter();
   const toast = useToast();
   const { userId, profile, update, refresh } = useSession();
-  const { coords, locErr, courts, cells, locate, refresh: refreshMap } = useNearby(15);
+  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
   const [games, setGames] = useState<GameView[] | null>(null);
@@ -79,6 +79,16 @@ export default function HomePage() {
   }, [recent, courts]);
 
   const availableCount = cells.reduce((s, c) => s + c.players, 0);
+  // Always lead with the biggest number that is true: free now > players nearby > courts nearby.
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const headline =
+    availableCount > 0
+      ? `${plural(availableCount, "player")} free now${nearbyPlayers && nearbyPlayers > availableCount ? ` · ${nearbyPlayers} nearby` : ""}`
+      : nearbyPlayers && nearbyPlayers > 0
+        ? `${plural(nearbyPlayers, "player")} nearby · be the first free`
+        : courts?.length
+          ? `${plural(courts.length, "court")} within 15 mi`
+          : "Finding courts near you";
 
   async function goAvailable(h = 2) {
     setBusy(true);
@@ -227,7 +237,7 @@ export default function HomePage() {
           <div className="livemap-head">
             <span className="chip-live">
               <span className="pulse" aria-hidden="true" />
-              {availableCount} player{availableCount === 1 ? "" : "s"} available near you
+              {headline}
             </span>
           </div>
         </div>

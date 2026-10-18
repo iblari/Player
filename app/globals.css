@@ -179,6 +179,7 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 .avail-strip.on .switch::after { left: 26px; background: var(--ball); }
 .avail-opts { display: flex; flex-direction: column; gap: 10px; }
 .avail-opts .seg button { background: var(--surface); }
+.avail-opts .seg button[aria-pressed="true"] { background: var(--ink); color: #000; }
 
 /* ---------- Live player map ---------- */
 .livemap { position: relative; height: 300px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: #191a1a; z-index: 0; }

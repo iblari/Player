@@ -13,14 +13,17 @@ export function useNearby(radius = 15) {
   const [locErr, setLocErr] = useState<string | null>(null);
   const [courts, setCourts] = useState<Court[] | null>(null);
   const [cells, setCells] = useState<PlayerCell[]>([]);
+  const [players, setPlayers] = useState<number | null>(null);
 
   const load = useCallback(
     async (c: Coords) => {
       const sb = supabase();
-      const [a, b] = await Promise.all([
+      const [a, b, n] = await Promise.all([
         sb.rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: radius }),
         sb.rpc("available_players_map", { lat: c.lat, lng: c.lng, radius_mi: radius }),
+        sb.rpc("players_nearby", { lat: c.lat, lng: c.lng, radius_mi: radius }),
       ]);
+      setPlayers(typeof n.data === "number" ? n.data : null);
       setCourts((a.data as Court[]) ?? []);
       setCells((b.data as PlayerCell[]) ?? []);
     },
@@ -53,5 +56,5 @@ export function useNearby(radius = 15) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(() => coords && load(coords), [coords, load]);
-  return { coords, locErr, courts, cells, locate, refresh };
+  return { coords, locErr, courts, cells, players, locate, refresh };
 }
