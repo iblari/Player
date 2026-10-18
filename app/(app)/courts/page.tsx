@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { rpcCompat, without } from "@/lib/rpc";
 import { useToast } from "@/components/Toast";
 import { getCoords, lastCoords, type Coords } from "@/lib/geo";
 import { SPORTS, SPORT_META, type Court, type Sport } from "@/lib/types";
@@ -38,7 +39,8 @@ function CourtsInner() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const load = useCallback(async (c: Coords) => {
-    const { data } = await supabase().rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: 30, p_sport: sport });
+    const base = { lat: c.lat, lng: c.lng, radius_mi: 30 };
+    const { data } = await rpcCompat("nearby_courts", { ...base, p_sport: sport }, base);
     setCourts((data as Court[]) ?? []);
   }, [sport]);
 
@@ -81,7 +83,7 @@ function CourtsInner() {
     const near = courts?.find((c) => c.name.toLowerCase() === name.trim().toLowerCase() && c.distance_mi < 2);
     if (near) return setErr("That court is already listed nearby.");
     setBusy(true);
-    const { error } = await supabase().rpc("add_court", {
+    const courtArgs = {
       p_name: name,
       lat: pin.lat,
       lng: pin.lng,
@@ -89,7 +91,9 @@ function CourtsInner() {
       p_notes: notes,
       p_address: address,
       p_sports: sports,
-    });
+    };
+    // An older database tags every new court pickleball, so only fall back when that's all that was picked.
+    const { error } = await rpcCompat("add_court", courtArgs, sports.length === 1 && sports[0] === "pickleball" ? without(courtArgs, "p_sports") : null);
     setBusy(false);
     if (error) return setErr("Couldn't add the court. Check the details and try again.");
     toast(`${name.trim()} added.`);

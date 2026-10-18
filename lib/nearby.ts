@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { rpcCompat, without } from "@/lib/rpc";
 import { getCoords, lastCoords, type Coords } from "@/lib/geo";
 import type { Court, Sport } from "@/lib/types";
 import type { PlayerCell } from "@/components/PlayerMap";
@@ -17,11 +17,12 @@ export function useNearby(radius = 15, sport?: Sport) {
 
   const load = useCallback(
     async (c: Coords) => {
-      const sb = supabase();
+      const base = { lat: c.lat, lng: c.lng, radius_mi: radius };
+      const args = { ...base, p_sport: sport ?? null };
       const [a, b, n] = await Promise.all([
-        sb.rpc("nearby_courts", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
-        sb.rpc("available_players_map", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
-        sb.rpc("players_nearby", { lat: c.lat, lng: c.lng, radius_mi: radius, p_sport: sport ?? null }),
+        rpcCompat("nearby_courts", args, base),
+        rpcCompat("available_players_map", args, base),
+        rpcCompat("players_nearby", args, base),
       ]);
       setPlayers(typeof n.data === "number" ? n.data : null);
       setCourts((a.data as Court[]) ?? []);

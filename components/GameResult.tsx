@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isMissing } from "@/lib/rpc";
 import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
 import { SPORT_META, type Sport } from "@/lib/types";
@@ -52,15 +53,18 @@ export default function GameResult({
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
 
   const load = useCallback(async () => {
     const sb = supabase();
-    const [{ data: r }, { data: h }, { data: fb }, { data: pa }] = await Promise.all([
+    const [{ data: r, error: rErr }, { data: h }, { data: fb }, { data: pa }] = await Promise.all([
       sb.from("game_results").select("team_a, team_b, score_a, score_b").eq("game_id", gameId).maybeSingle(),
       sb.from("rating_history").select("player_id, mu_before, mu_after, won").eq("game_id", gameId),
       sb.from("level_feedback").select("ratee_id").eq("game_id", gameId).eq("rater_id", userId),
       sb.from("play_again").select("answer").eq("game_id", gameId).eq("rater_id", userId).maybeSingle(),
     ]);
+    // Database not migrated yet: hide score entry instead of showing a form that can't save.
+    if (isMissing(rErr)) return setUnavailable(true);
     setResult((r as Result) ?? null);
     setHist(((h as Hist[]) ?? []).map((x) => ({ ...x, mu_before: Number(x.mu_before), mu_after: Number(x.mu_after) })));
     setFeedbackDone(((fb as unknown[]) ?? []).length > 0 || !!pa);
@@ -70,7 +74,7 @@ export default function GameResult({
     load();
   }, [load]);
 
-  if (result === undefined) return null;
+  if (unavailable || result === undefined) return null;
 
   async function submitScore() {
     setErr(null);

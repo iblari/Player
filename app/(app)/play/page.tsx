@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { rpcCompat, without } from "@/lib/rpc";
 import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
@@ -54,8 +55,8 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!coords) return;
-    supabase()
-      .rpc("recommended_courts", { lat: coords.lat, lng: coords.lng, p_limit: 8, p_sport: sport })
+    const base = { lat: coords.lat, lng: coords.lng, p_limit: 8 };
+    rpcCompat("recommended_courts", { ...base, p_sport: sport }, base)
       .then(({ data }) => setRecommended((data as Court[]) ?? []));
   }, [coords, courts, sport]);
 
@@ -65,7 +66,7 @@ export default function HomePage() {
   const load = useCallback(async () => {
     if (!userId) return;
     const sb = supabase();
-    const [{ data: r }, { data: n }, mine] = await Promise.all([sb.rpc("recent_courts", { p_limit: 2, p_sport: sport }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
+    const [{ data: r }, { data: n }, mine] = await Promise.all([rpcCompat("recent_courts", { p_limit: 2, p_sport: sport }, { p_limit: 2 }), sb.rpc("games_for_me"), fetchMyGames(userId)]);
     setRecent((r as Recent[]) ?? []);
     const near = ((n as Nearby[]) ?? []).map((g) => ({ ...g, status: "open" as const, attendance_done: false, created_at: "", filled_at: null, court_lat: null, court_lng: null }));
     setGames(near);

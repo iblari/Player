@@ -3,6 +3,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { isMissing, rpcCompat, without } from "@/lib/rpc";
 import { useSession } from "@/components/Session";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
@@ -86,8 +87,8 @@ function HostInner() {
   useEffect(() => {
     if (!courtId) return;
     let live = true;
-    supabase()
-      .rpc("fill_supply", { p_court: courtId, p_min: min, p_max: max, p_sport: sport })
+    const base = { p_court: courtId, p_min: min, p_max: max };
+    rpcCompat("fill_supply", { ...base, p_sport: sport }, base)
       .then(({ data }) => live && setSupply((data as { available: number; nearby: number }[])?.[0] ?? { available: 0, nearby: 0 }));
     return () => {
       live = false;
@@ -109,7 +110,7 @@ function HostInner() {
     if (!startsAt || isNaN(startsAt.getTime())) return setErr("Pick a start time.");
     if (startsAt.getTime() < Date.now() - 60000) return setErr("That time has passed. Pick a later one.");
     setBusy(true);
-    const { data, error } = await supabase().rpc("create_game", {
+    const args = {
       p_court: courtId,
       p_slots: slots,
       p_min: min,
@@ -118,7 +119,13 @@ function HostInner() {
       p_note: note,
       p_confirmed: confirmed,
       p_sport: sport,
-    });
+    };
+    // An older database can only create pickleball games, so only fall back for pickleball.
+    const { data, error } = await rpcCompat<string>("create_game", args, sport === "pickleball" ? without(args, "p_sport") : null);
+    if (error && isMissing(error)) {
+      setBusy(false);
+      return setErr(`${meta.label} games aren't switched on yet. Try again soon.`);
+    }
     if (error?.message?.includes("already_hosting")) {
       setBusy(false);
       const { data: h } = await supabase().rpc("active_hosted_game");

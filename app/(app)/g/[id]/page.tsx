@@ -52,11 +52,13 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     ((rr as Rel[]) ?? []).forEach((x) => (m[x.player_id] = x));
     setRel(m);
     if (g) {
-      const { data: lv } = await sb.rpc("player_levels", { p_ids: ids, p_sport: g.sport ?? "pickleball" });
+      const { data: lv, error: lvErr } = await sb.rpc("player_levels", { p_ids: ids, p_sport: g.sport ?? "pickleball" });
       const lm: Record<string, { level: number | null; games: number }> = {};
       ((lv as { player_id: string; level: number | null; games: number }[]) ?? []).forEach(
         (x) => (lm[x.player_id] = { level: x.level == null ? null : Number(x.level), games: x.games }),
       );
+      // Database not migrated yet: show the profile level, as before.
+      if (lvErr) Object.entries(await fetchPlayers(ids)).forEach(([pid, p]) => (lm[pid] = { level: Number(p.skill), games: 0 }));
       setLevels(lm);
     }
     if (g && !pt) {
