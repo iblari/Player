@@ -7,6 +7,8 @@ import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
 import Avatar from "@/components/Avatar";
+import MembershipPrompt from "@/components/MembershipPrompt";
+import { joinGame, saveAnswer } from "@/lib/membership";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, timeOf, when } from "@/lib/util";
@@ -27,6 +29,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const [noShows, setNoShows] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [ask, setAsk] = useState(false);
 
   const load = useCallback(async () => {
     const sb = supabase();
@@ -91,10 +94,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       load();
     }
   }
-  const join = () =>
+  const join = (confirmed = false) =>
     act(async () => {
-      const { data, error } = await supabase().rpc("join_game", { p_game: id });
-      toast(error ? "Couldn't join. Try again." : JOIN_MESSAGES[data as string] ?? "Done.");
+      const res = await joinGame(id, confirmed);
+      if (res === "needs_membership") return setAsk(true);
+      toast(res === "error" ? "Couldn't join. Try again." : JOIN_MESSAGES[res] ?? "Done.");
     });
   const leave = () =>
     act(async () => {
@@ -149,6 +153,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </div>
       </div>
 
+      {game.members_only && (
+        <div className="notice">
+          <b>{game.club ?? "Members"} only</b>
+          <span className="muted">Players confirm they&apos;re {game.club ? `${game.club} members` : "members"} or a member&apos;s guest before joining. Bring your membership card.</span>
+        </div>
+      )}
       <CourtDiagram slots={game.slots} players={ids.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
 
       <div className="facts">
@@ -180,7 +190,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               Sign in to join
             </Link>
           ) : st === "open" && !inGame ? (
-            <button className="btn btn-ball btn-block" onClick={join} disabled={busy}>
+            <button className="btn btn-ball btn-block" onClick={() => join()} disabled={busy}>
               I&apos;m in
             </button>
           ) : null}
@@ -284,6 +294,19 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             </button>
           )}
         </div>
+      )}
+      {ask && (
+        <MembershipPrompt
+          club={game.club ?? null}
+          courtName={game.courts.name}
+          action="join"
+          onClose={() => setAsk(false)}
+          onAnswer={async (a) => {
+            setAsk(false);
+            await saveAnswer(game.club, a);
+            join(true);
+          }}
+        />
       )}
     </>
   );

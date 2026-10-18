@@ -9,6 +9,8 @@ import { VAPID_PUBLIC_KEY } from "@/lib/env";
 import { fmtSkill, urlBase64ToUint8Array } from "@/lib/util";
 import { levelToSkill, skillToLevel, SPORTS, type Sport } from "@/lib/types";
 
+const KNOWN_CLUBS = ["Life Time"];
+
 type PushState = "unsupported" | "ios-install" | "off" | "on" | "blocked";
 
 const LEVEL_HINTS: Record<Sport, string[]> = {
@@ -36,6 +38,7 @@ export default function MePage() {
   const [name, setName] = useState("");
   const [sports, setSports] = useState<Partial<Record<Sport, number>>>({});
   const [photo, setPhoto] = useState<string | null>(null);
+  const [clubs, setClubs] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export default function MePage() {
     if (!profile) return;
     setName(profile.display_name.includes("@") ? "" : profile.display_name);
     setPhoto(profile.avatar_url ?? null);
+    setClubs(profile.clubs ?? []);
     const s = { ...(profile.sports ?? {}) };
     if (!Object.keys(s).length) s.pickleball = skillToLevel(Number(profile.skill));
     setSports(s);
@@ -101,7 +105,7 @@ export default function MePage() {
     if (!Object.keys(sports).length) return setErr("Pick at least one sport you play.");
     setErr(null);
     setSaving(true);
-    const patch: Parameters<typeof update>[0] = { display_name: name.trim(), sports };
+    const patch: Parameters<typeof update>[0] = { display_name: name.trim(), sports, clubs };
     if (sports.pickleball) patch.skill = levelToSkill(sports.pickleball);
     const e2 = await update(patch);
     setSaving(false);
@@ -223,6 +227,23 @@ export default function MePage() {
             Tennis games are coming soon. Your level is saved so you&apos;re ready when they launch.
           </p>
         )}
+
+        <div className="field">
+          <span>Club memberships</span>
+          <div className="seg">
+            {KNOWN_CLUBS.map((c) => {
+              const on = clubs.includes(c);
+              return (
+                <button key={c} type="button" aria-pressed={on} onClick={() => setClubs((xs) => (on ? xs.filter((x) => x !== c) : [...xs, c]))}>
+                  {on ? "✓ " : ""}I&apos;m a {c} member
+                </button>
+              );
+            })}
+          </div>
+          <span className="small muted" style={{ fontWeight: 400 }}>
+            Members-only courts like Life Time only show their games to confirmed members, so nobody gets turned away at the door.
+          </span>
+        </div>
 
         {err && <p className="err">{err}</p>}
         <button className="btn btn-primary" disabled={saving}>

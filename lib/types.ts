@@ -6,6 +6,7 @@ export type Profile = {
   available_until: string | null;
   location: unknown | null;
   avatar_url: string | null;
+  clubs: string[];
   sports: Partial<Record<Sport, number>>;
 };
 
@@ -40,6 +41,7 @@ export type Court = {
   members_only?: boolean;
   lit?: boolean;
   source?: string;
+  club?: string | null;
 };
 
 export type Game = {
@@ -54,6 +56,8 @@ export type Game = {
   status: "open" | "full" | "cancelled";
   note: string | null;
   attendance_done: boolean;
+  members_only?: boolean;
+  club?: string | null;
   created_at: string;
   filled_at: string | null;
 };

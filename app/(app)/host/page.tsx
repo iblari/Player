@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/Session";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
+import MembershipPrompt from "@/components/MembershipPrompt";
+import { saveAnswer } from "@/lib/membership";
 import { BackIcon, PinIcon } from "@/components/Icons";
 import { useNearby } from "@/lib/nearby";
 import type { Court } from "@/lib/types";
@@ -42,6 +44,7 @@ function HostInner() {
   const [extra, setExtra] = useState<Court | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [ask, setAsk] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -85,7 +88,7 @@ function HostInner() {
   const singles = supply ? fillChance(supply.available, supply.nearby, 1) : null;
   const chosen = slots === 4 ? doubles : singles;
 
-  async function submit() {
+  async function submit(confirmed = false) {
     setErr(null);
     if (!courtId) return setSheet(true);
     if (!startsAt || isNaN(startsAt.getTime())) return setErr("Pick a start time.");
@@ -98,7 +101,12 @@ function HostInner() {
       p_max: max,
       p_starts: startsAt.toISOString(),
       p_note: note,
+      p_confirmed: confirmed,
     });
+    if (error?.message?.includes("needs_membership")) {
+      setBusy(false);
+      return setAsk(true);
+    }
     if (error || !data) {
       setBusy(false);
       return setErr(error?.message ?? "Couldn't post the game. Try again.");
@@ -136,6 +144,15 @@ function HostInner() {
           <span className="m">{court ? `${Number.isFinite(court.distance_mi) ? miles(court.distance_mi) + " away · " : ""}Change` : "Choose a court"}</span>
         </span>
       </button>
+
+      {court?.members_only && (
+        <div className="notice">
+          <b>{court.club ?? "Members"} only</b>
+          <span className="muted">
+            Only players who&apos;ve confirmed they&apos;re {court.club ? `${court.club} members` : "members"} will see and get pinged for this game.
+          </span>
+        </div>
+      )}
 
       <section className="block">
         <h2>Choose your game</h2>
@@ -209,7 +226,7 @@ function HostInner() {
 
       <div className="sticky-cta">
         {err && <p className="err">{err}</p>}
-        <button className="btn btn-primary btn-block" onClick={submit} disabled={busy}>
+        <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy}>
           {busy ? "Posting…" : `Find ${slots === 4 ? "3 players" : "1 player"}`}
         </button>
       </div>
@@ -223,6 +240,19 @@ function HostInner() {
             router.replace(`/host?court=${c.id}${start === "pick" ? "&when=later" : ""}`);
           }}
           onClose={() => (courtId ? setSheet(false) : router.back())}
+        />
+      )}
+      {ask && court && (
+        <MembershipPrompt
+          club={court.club ?? null}
+          courtName={court.name}
+          action="host"
+          onClose={() => setAsk(false)}
+          onAnswer={async (a) => {
+            setAsk(false);
+            await saveAnswer(court.club, a);
+            submit(true);
+          }}
         />
       )}
     </>

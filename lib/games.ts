@@ -56,6 +56,7 @@ export const JOIN_MESSAGES: Record<string, string> = {
   expired: "That request expired.",
   cancelled: "The host cancelled this game.",
   signed_out: "Sign in to join.",
+  needs_membership: "This court is members only.",
 };
 
 /** Calls onChange (debounced) whenever games or rosters change anywhere. */

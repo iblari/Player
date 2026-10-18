@@ -8,6 +8,8 @@ import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
+import MembershipPrompt from "@/components/MembershipPrompt";
+import { joinGame, saveAnswer } from "@/lib/membership";
 import RecommendedCourts from "@/components/RecommendedCourts";
 import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
@@ -37,6 +39,7 @@ export default function HomePage() {
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [busy, setBusy] = useState(false);
   const [showOpts, setShowOpts] = useState(false);
+  const [ask, setAsk] = useState<GameView | null>(null);
   const [recommended, setRecommended] = useState<Court[] | null>(null);
 
   useEffect(() => {
@@ -98,10 +101,11 @@ export default function HomePage() {
     toast((await update({ available_until: null })) ?? "You're off the board.");
     setBusy(false);
   }
-  async function join(id: string) {
-    const { data, error } = await supabase().rpc("join_game", { p_game: id });
-    toast(error ? "Couldn't join. Try again." : JOIN_MESSAGES[data as string] ?? "Done.");
-    if (data === "joined") router.push(`/g/${id}`);
+  async function join(id: string, confirmed = false) {
+    const res = await joinGame(id, confirmed);
+    if (res === "needs_membership") return setAsk(games?.find((g) => g.id === id) ?? null);
+    toast(res === "error" ? "Couldn't join. Try again." : JOIN_MESSAGES[res] ?? "Done.");
+    if (res === "joined") router.push(`/g/${id}`);
     else load();
   }
   async function pass(id: string) {
@@ -278,6 +282,7 @@ export default function HomePage() {
                   <Link href={`/g/${g.id}`} className="gcard-court" aria-label={`Open game at ${g.court_name}`}>
                     <CourtDiagram size="sm" slots={g.slots} players={g.player_ids.map((id) => ({ id, name: names(id) }))} />
                     <span className={`pill badge ${left === 1 ? "pill-ball" : ""}`}>Need {left}</span>
+                    {g.members_only && <span className="pill" style={{ position: "absolute", right: 10, top: 10 }}>{g.club ?? "Members"} only</span>}
                   </Link>
                   <span className="gcard-title">{g.court_name}</span>
                   <span className="gcard-meta">
@@ -299,6 +304,21 @@ export default function HomePage() {
         )}
       </section>
 
+      {ask && (
+        <MembershipPrompt
+          club={ask.club ?? null}
+          courtName={ask.court_name}
+          action="join"
+          onClose={() => setAsk(null)}
+          onAnswer={async (a) => {
+            const g = ask;
+            setAsk(null);
+            await saveAnswer(g.club, a);
+            if (a === "member") await refresh();
+            join(g.id, true);
+          }}
+        />
+      )}
       {sheet && <LocationSheet courts={courts} title={sheet === "later" ? "Schedule a game" : "Pick a location to play"} onPick={pick} onClose={() => setSheet(null)} />}
     </>
   );
