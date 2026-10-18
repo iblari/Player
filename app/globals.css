@@ -461,8 +461,8 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 @media (max-width: 380px) { .lp-map { zoom: 0.88; } }
 .lp-dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--ball); border: 3px solid #111; box-shadow: 0 0 0 6px rgba(216,240,58,.22); opacity: 0; }
 .lp-d1 { animation: lp-pop 16s ease-out infinite, lp-goA 16s ease-in-out infinite; }
-.lp-d2 { animation: lp-pop 16s ease-out .15s infinite, lp-goB 16s ease-in-out infinite; }
-.lp-d3 { animation: lp-pop 16s ease-out .3s infinite, lp-goC 16s ease-in-out infinite; }
+.lp-d2 { animation: lp-popStay 16s ease-out .15s infinite; }
+.lp-d3 { animation: lp-popStay 16s ease-out .3s infinite; }
 .lp-d4 { animation: lp-popStay 16s ease-out .45s infinite; }
 .lp-d5 { animation: lp-popStay 16s ease-out .6s infinite; }
 .lp-d6 { animation: lp-popStay 16s ease-out .75s infinite; }
@@ -499,13 +499,13 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .lp-n2 { animation: lp-n2 16s steps(1) infinite; }
 .lp-n3 { animation: lp-n3 16s steps(1) infinite; }
 .lp-n4 { animation: lp-n4 16s steps(1) infinite; color: var(--ball); }
-@keyframes lp-n1 { 0%, 49.9% { opacity: 1; } 50% { opacity: 1; } 84%, 100% { opacity: 0; } }
+@keyframes lp-n1 { 0% { opacity: 1; } 84%, 100% { opacity: 0; } }
 @keyframes lp-n2 { 0%, 49.9% { opacity: 0; } 50%, 83.95% { opacity: 0; } 84% { opacity: 1; } 86%, 100% { opacity: 0; } }
 @keyframes lp-n3 { 0%, 49.9% { opacity: 0; } 50%, 85.95% { opacity: 0; } 86% { opacity: 1; } 88%, 100% { opacity: 0; } }
-@keyframes lp-n4 { 0%, 49.9% { opacity: 0; } 50%, 87.95% { opacity: 0; } 88%, 100% { opacity: 1; } }
+@keyframes lp-n4 { 0%, 83.9% { opacity: 0; } 84%, 100% { opacity: 1; } }
 .lp-meter { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
-.lp-fill { display: block; height: 100%; width: 25%; border-radius: 3px; background: var(--ball); animation: lp-fill 16s ease-in-out infinite; }
-@keyframes lp-fill { 0%, 49.9% { width: 25%; } 50%, 73% { width: 25%; } 84% { width: 50%; } 86% { width: 75%; } 88%, 98% { width: 100%; } 100% { width: 25%; } }
+.lp-fill { display: block; height: 100%; width: 50%; border-radius: 3px; background: var(--ball); animation: lp-fill 16s ease-in-out infinite; }
+@keyframes lp-fill { 0%, 76% { width: 50%; } 84%, 98% { width: 100%; } 100% { width: 50%; } }
 .lp-gameon { position: absolute; right: 16px; top: -18px; background: var(--ball); color: var(--ball-ink); border-radius: 999px; padding: 6px 14px; font-family: var(--f-display); font-weight: 800; font-size: 18px; text-transform: uppercase; opacity: 0; animation: lp-gameon 16s ease-in-out infinite; }
 @keyframes lp-gameon { 0%, 49.9% { opacity: 0; transform: translateY(6px); } 50%, 88.5% { opacity: 0; transform: translateY(6px); } 90%, 97% { opacity: 1; transform: translateY(0); } 99%, 100% { opacity: 0; } }
 
@@ -649,3 +649,8 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 @keyframes lp-fl3 { 0% { background: var(--surface); color: var(--muted); } 50% { background: var(--ball); color: var(--ball-ink); } 100% { background: var(--ball); color: var(--ball-ink); } }
 .lp-map-wrap { flex-direction: column; align-items: center; }
 @media (prefers-reduced-motion: reduce) { .lp-scene1, .lp-scene2 { opacity: 0 !important; } .lp-scene3 { opacity: 1 !important; } .lp-flow3 { background: var(--ball); color: var(--ball-ink); } }
+
+/* Singles-first promo */
+.lp-mc-single { grid-template-rows: 1fr !important; }
+.lp-mc-single > div:first-child { border-bottom: 0 !important; }
+.lp-s-fill-slow { color: var(--muted); }

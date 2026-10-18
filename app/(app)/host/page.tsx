@@ -41,7 +41,8 @@ function HostInner() {
   const clamp = (x: number) => clampSkill(x, meta.lo, meta.hi);
   const [courtId, setCourtId] = useState(params.get("court") ?? "");
   const [sheet, setSheet] = useState(!params.get("court"));
-  const [slots, setSlots] = useState<2 | 4>(4);
+  // Singles by default: it needs one more player instead of three, so it fills far more often.
+  const [slots, setSlots] = useState<2 | 4>(2);
   const [start, setStart] = useState(params.get("when") === "later" ? "pick" : "15");
   const [picked, setPicked] = useState(() => localInputValue(new Date(Date.now() + 3 * 3600e3)));
   const [min, setMin] = useState(3);
@@ -205,13 +206,14 @@ function HostInner() {
         <h2>Choose your game</h2>
         <div className="options">
           {[
-            { v: 4 as const, t: "Doubles", m: "You + 3 players", est: doubles },
-            { v: 2 as const, t: "Singles", m: "You + 1 player", est: singles },
+            { v: 2 as const, t: "Singles", m: "You + 1 player", est: singles, tag: "Fills fastest" },
+            { v: 4 as const, t: "Doubles", m: "You + 3 players", est: doubles, tag: null },
           ].map((o) => (
             <button key={o.v} className="option" aria-pressed={slots === o.v} onClick={() => setSlots(o.v)}>
               <CourtDiagram size="sm" slots={o.v} players={me} />
               <span>
                 <span className="t">{o.t}</span>
+                {o.tag && <span className="pill pill-ball" style={{ marginLeft: 8, verticalAlign: "2px" }}>{o.tag}</span>}
                 <br />
                 <span className="m">{o.m}</span>
               </span>

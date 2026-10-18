@@ -51,7 +51,7 @@ export default function HowItWorks() {
           <div className="lp-ping">
             <span className="lp-ping-icon" />
             <div>
-              <b>Doubles near you · need 1</b>
+              <b>Singles near you · need 1</b>
               <br />
               Tap to grab the spot
             </div>
@@ -64,26 +64,24 @@ export default function HowItWorks() {
           <span className="lp-step-n">3</span>
           <div>
             <h3>Show up and play</h3>
-            <p>Watch the spots fill live. When it&apos;s four of four, the game&apos;s on and you get directions.</p>
+            <p>Watch your spot fill live. The moment it does, the game&apos;s on and you get directions.</p>
           </div>
         </div>
         <div className="lp-demo lp-demo-court" aria-hidden="true">
           <div className="lp-mini-court">
-            <div className="lp-mc-side">
+            <div className="lp-mc-side lp-mc-single">
               <div><span className="lp-ball">MK</span></div>
-              <div><span className="lp-ball">JP</span></div>
             </div>
             <div className="lp-mc-kitchen" />
             <div className="lp-mc-kitchen lp-mc-k2" />
-            <div className="lp-mc-side">
-              <div><span className="lp-ball">RS</span></div>
+            <div className="lp-mc-side lp-mc-single">
               <div className="lp-mc-open">
                 <span className="lp-empty" />
                 <span className="lp-ball lp-you">You</span>
               </div>
             </div>
           </div>
-          <div className="lp-court-gameon">4/4 · Game on</div>
+          <div className="lp-court-gameon">2/2 · Game on</div>
         </div>
       </li>
     </ol>

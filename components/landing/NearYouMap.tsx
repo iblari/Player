@@ -9,7 +9,7 @@ export default function NearYouMap() {
       <div
         className="lp-map"
         role="img"
-        aria-label="Demo: pick a court, choose doubles, post the game; nearby players at your level get pinged, three accept and head there, and the game fills to four of four."
+        aria-label="Demo: pick a court, choose singles, post the game; nearby players at your level get pinged, one accepts and heads there, and the game is on."
       >
         <div className="lp-scene lp-scene1" aria-hidden="true">
           <div className="lp-s-search">
@@ -46,17 +46,17 @@ export default function NearYouMap() {
           </div>
           <div className="lp-s-label">Choose your game</div>
           <div className="lp-s-opt lp-s-doubles">
-            <span className="lp-s-mini lp-s-mini4" />
-            <span className="lp-s-grow"><b>Doubles</b><span>You + 3 players</span></span>
-            <span className="lp-s-fill">Fills fast</span>
-          </div>
-          <div className="lp-s-opt">
             <span className="lp-s-mini" />
             <span className="lp-s-grow"><b>Singles</b><span>You + 1 player</span></span>
-            <span className="lp-s-fill">Fills fast</span>
+            <span className="lp-s-fill">Fills fastest</span>
+          </div>
+          <div className="lp-s-opt">
+            <span className="lp-s-mini lp-s-mini4" />
+            <span className="lp-s-grow"><b>Doubles</b><span>You + 3 players</span></span>
+            <span className="lp-s-fill lp-s-fill-slow">Needs 3</span>
           </div>
           <div className="lp-s-when"><span className="on">Now</span><span>In 45 min</span><span>Later</span></div>
-          <div className="lp-s-cta">Find 3 players</div>
+          <div className="lp-s-cta">Find 1 player</div>
           <span className="lp-tap lp-tap2" />
           <span className="lp-tap lp-tap3" />
         </div>
@@ -104,21 +104,19 @@ export default function NearYouMap() {
               <span><i />Game posted · pinging players at your level</span>
             </div>
             <div className="lp-chip lp-k3">
-              <span><i />Players on the way</span>
+              <span><i />Your opponent is on the way</span>
             </div>
           </div>
 
           <div className="lp-sheet" aria-hidden="true">
             <div className="lp-sheet-top">
               <div>
-                <div className="lp-sheet-title">Doubles at Memorial Park</div>
+                <div className="lp-sheet-title">Singles at Memorial Park</div>
                 <div className="lp-sheet-sub">Pickleball · your level · starts in 30 min</div>
               </div>
               <div className="lp-count">
-                <span className="lp-n lp-n1">1/4</span>
-                <span className="lp-n lp-n2">2/4</span>
-                <span className="lp-n lp-n3">3/4</span>
-                <span className="lp-n lp-n4">4/4</span>
+                <span className="lp-n lp-n1">1/2</span>
+                <span className="lp-n lp-n4">2/2</span>
               </div>
             </div>
             <div className="lp-meter">
