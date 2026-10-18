@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Find pickleball players near you.",
     start_url: "/play",
     display: "standalone",
-    background_color: "#edf1ec",
-    theme_color: "#2459a6",
+    background_color: "#111111",
+    theme_color: "#111111",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },

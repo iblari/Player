@@ -137,6 +137,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             {game.slots === 4 ? "Doubles" : "Singles"} at {game.courts.name}
           </p>
           <h1>{headline}</h1>
+          {st === "open" && (
+            <p className="finding" style={{ margin: "8px 0 0" }}>
+              <span className="pulse" aria-hidden="true" /> Finding players near {game.courts.name}
+            </p>
+          )}
         </div>
         <div className="score-big" aria-label={`${n} of ${game.slots} players`}>
           {n}

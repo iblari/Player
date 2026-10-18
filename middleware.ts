@@ -4,7 +4,7 @@ type CookieList = { name: string; value: string; options: CookieOptions }[];
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
-const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats"];
+const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

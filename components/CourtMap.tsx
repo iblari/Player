@@ -24,9 +24,10 @@ export default function CourtMap({ center, courts, me, picking, onMove, onSelect
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { zoomControl: false, attributionControl: true }).setView([center.lat, center.lng], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: "© OpenStreetMap",
+      className: "tiles-dark",
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(m);
     L.control.zoom({ position: "bottomright" }).addTo(m);
     m.on("moveend", () => {
