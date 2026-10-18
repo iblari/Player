@@ -11,7 +11,7 @@ import { saveAnswer } from "@/lib/membership";
 import { BackIcon, PinIcon } from "@/components/Icons";
 import { useNearby } from "@/lib/nearby";
 import type { Court } from "@/lib/types";
-import { clampSkill, fillChance, fmtSkill, miles, timeOf, YES_RATE_AVAILABLE, YES_RATE_NEARBY } from "@/lib/util";
+import { clampSkill, fillChance, fmtSkill, miles, timeOf, when, YES_RATE_AVAILABLE, YES_RATE_NEARBY } from "@/lib/util";
 
 const PlayerMap = dynamic(() => import("@/components/PlayerMap"), { ssr: false });
 
@@ -45,6 +45,13 @@ function HostInner() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ask, setAsk] = useState(false);
+  const [hosting, setHosting] = useState<{ id: string; court_name: string; starts_at: string; status: string } | null>(null);
+
+  useEffect(() => {
+    supabase()
+      .rpc("active_hosted_game")
+      .then(({ data }) => setHosting(((data as { id: string; court_name: string; starts_at: string; status: string }[]) ?? [])[0] ?? null));
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -103,6 +110,12 @@ function HostInner() {
       p_note: note,
       p_confirmed: confirmed,
     });
+    if (error?.message?.includes("already_hosting")) {
+      setBusy(false);
+      const { data: h } = await supabase().rpc("active_hosted_game");
+      setHosting(((h as { id: string; court_name: string; starts_at: string; status: string }[]) ?? [])[0] ?? null);
+      return setErr("You're already hosting a game. Cancel it or wait until it ends to host another.");
+    }
     if (error?.message?.includes("needs_membership")) {
       setBusy(false);
       return setAsk(true);
@@ -226,7 +239,18 @@ function HostInner() {
 
       <div className="sticky-cta">
         {err && <p className="err">{err}</p>}
-        <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy}>
+        {hosting && (
+          <div className="notice warn" role="status">
+            <b>You&apos;re already hosting at {hosting.court_name}</b>
+            <span>
+              {hosting.status === "full" ? "That game is full and" : "That game is"} set for {when(hosting.starts_at)}. You can host one game at a time.
+            </span>
+            <button className="btn btn-sm" onClick={() => router.push(`/g/${hosting.id}`)}>
+              Open your game
+            </button>
+          </div>
+        )}
+        <button className="btn btn-primary btn-block" onClick={() => submit()} disabled={busy || !!hosting}>
           {busy ? "Posting…" : `Find ${slots === 4 ? "3 players" : "1 player"}`}
         </button>
       </div>
