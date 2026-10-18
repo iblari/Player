@@ -758,3 +758,39 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .pay-paypal { background: #ffc439; color: #111; }
 .pay-zelle { display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); font: inherit; cursor: pointer; }
 .pay-zelle b { margin-left: 6px; }
+
+/* ---------- Courts: map-first ---------- */
+.mf { position: fixed; inset: 0; z-index: 1; background: #191a1a; }
+.mf-map { position: absolute; inset: 0; }
+.map.fill { position: absolute; inset: 0; height: auto; border: 0; border-radius: 0; }
+.mf .maplibregl-ctrl-top-right { top: calc(env(safe-area-inset-top, 0px) + 64px); }
+.mf .maplibregl-ctrl-bottom-right, .mf .maplibregl-ctrl-bottom-left { display: none; }
+.mf-top { position: absolute; z-index: 5; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.mf-top > * { pointer-events: auto; }
+.mf-top .sport-switch { background: rgba(30,30,30,.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.mf-top .sport-switch button { min-height: 36px; padding: 0 14px; }
+.mf-fab { margin-left: auto; width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: var(--ball); color: var(--ball-ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.mf-fab svg { width: 22px; height: 22px; }
+.mf-locate { position: absolute; z-index: 4; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(30,30,30,.94); display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4); transition: bottom .25s ease; }
+.me-dot { width: 14px; height: 14px; border-radius: 50%; background: #3b82f6; border: 2.5px solid #fff; }
+.mf-sheet { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; background: var(--paper); border-radius: 22px 22px 0 0; box-shadow: 0 -12px 32px rgba(0,0,0,.55); transition: height .28s cubic-bezier(.2,.8,.2,1); max-width: 640px; margin: 0 auto; }
+.mf-grip { flex: none; height: 26px; border: 0; background: none; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.mf-grip span { width: 40px; height: 5px; border-radius: 9px; background: #444; }
+.mf-head { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 2px; }
+.mf-head h1 { font-size: 1.7rem; }
+.mf-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 28px); display: flex; flex-direction: column; }
+.mf-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; text-align: left; font: inherit; cursor: pointer; width: 100%; }
+.mf-row.on { background: var(--surface); margin: 0 -8px; padding: 10px 8px; border-radius: 12px; width: calc(100% + 16px); }
+.mf-row .icon-circle { width: 38px; height: 38px; border-radius: 11px; }
+.mf-row .icon-circle svg { width: 17px; height: 17px; }
+.mf-row .grow, .mf-sel .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mf-row b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mf-row small, .mf-sel small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mf-sel { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.mf-sel-head { display: flex; align-items: center; gap: 8px; }
+.mf-sel b { font-size: 1.15rem; }
+.mf-back { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.mf-back svg { width: 18px; height: 18px; }
+.mf-stats { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.mf-stats b { color: var(--ink); }
+.court-pin.sel { outline: 3px solid var(--ball); outline-offset: 2px; transform: scale(1.15); }
