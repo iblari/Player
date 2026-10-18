@@ -8,6 +8,7 @@ import { rpcCompat, without } from "@/lib/rpc";
 import { useToast } from "@/components/Toast";
 import { GeoError, getCoords, lastCoords, type Coords, type GeoReason } from "@/lib/geo";
 import LocationFix from "@/components/LocationFix";
+import { seedArea } from "@/lib/seed";
 import { SPORTS, SPORT_META, type Court, type Sport } from "@/lib/types";
 import { miles } from "@/lib/util";
 import PlaceSearch from "@/components/PlaceSearch";
@@ -60,6 +61,9 @@ function CourtsInner() {
       setCenter(c);
       setPin(c);
       load(c);
+      seedArea(c).then((n) => {
+        if (n > 0) load(c);
+      });
     } catch (e) {
       setLocErr((e as Error).message);
       setLocReason(e instanceof GeoError ? e.reason : "unavailable");
@@ -135,6 +139,9 @@ function CourtsInner() {
             setCenter(pt);
             setPin(pt);
             load(pt);
+            seedArea(pt).then((n) => {
+              if (n > 0) load(pt);
+            });
           }}
         />
       )}

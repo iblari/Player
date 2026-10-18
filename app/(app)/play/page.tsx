@@ -18,6 +18,7 @@ import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
 import { getCoords, isDenied, lastCoords } from "@/lib/geo";
 import LocationFix from "@/components/LocationFix";
+import WhereYouPlay from "@/components/WhereYouPlay";
 import { useNearby } from "@/lib/nearby";
 import { fetchMyGames, fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames, type GameView } from "@/lib/games";
 import { isAvailable, SPORT_META, type Court, type PlayerLite } from "@/lib/types";
@@ -36,7 +37,7 @@ export default function HomePage() {
   const toast = useToast();
   const { userId, profile, update, refresh } = useSession();
   const [sport, setSport] = useSport(profile?.sports);
-  const { coords, locErr, locReason, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap, setManual } = useNearby(15, sport);
+  const { coords, locErr, locReason, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap, setManual, ask: askWhere, seeding } = useNearby(15, sport);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
   const [dur, setDur] = useState<number | "pick" | null>(null);
@@ -98,9 +99,11 @@ export default function HomePage() {
       ? `${plural(availableCount, "player")} free now${nearbyPlayers && nearbyPlayers > availableCount ? ` · ${nearbyPlayers} nearby` : ""}`
       : nearbyPlayers && nearbyPlayers > 0
         ? `${plural(nearbyPlayers, "player")} nearby · be the first free`
-        : courts?.length
-          ? `${plural(courts.length, "court")} within 15 mi`
-          : "Finding courts near you";
+        : seeding && (courts?.length ?? 0) < 5
+          ? "Loading courts near you…"
+          : courts?.length
+            ? `${plural(courts.length, "court")} within 15 mi`
+            : "Finding courts near you";
 
   function untilFromTime(t: string) {
     const [hh, mm] = t.split(":").map(Number);
@@ -169,6 +172,8 @@ export default function HomePage() {
         </div>
         <h1>{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
       </div>
+
+      {askWhere && <WhereYouPlay onLocate={locate} onPlace={(pt) => setManual(pt)} />}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="search-pill" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>

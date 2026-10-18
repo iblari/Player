@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { rpcCompat, without } from "@/lib/rpc";
-import { GeoError, getCoords, lastCoords, type Coords, type GeoReason } from "@/lib/geo";
+import { GeoError, getCoords, lastCoords, locationPermission, saveCoords, type Coords, type GeoReason } from "@/lib/geo";
+import { seedArea } from "@/lib/seed";
 import type { Court, Sport } from "@/lib/types";
 import type { PlayerCell } from "@/components/PlayerMap";
 
@@ -15,6 +16,9 @@ export function useNearby(radius = 15, sport?: Sport) {
   const [courts, setCourts] = useState<Court[] | null>(null);
   const [cells, setCells] = useState<PlayerCell[]>([]);
   const [players, setPlayers] = useState<number | null>(null);
+  // First visit, location not asked yet: show "Where do you play?" instead of a cold browser prompt.
+  const [ask, setAsk] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(
     async (c: Coords) => {
@@ -32,13 +36,26 @@ export function useNearby(radius = 15, sport?: Sport) {
     [radius, sport]
   );
 
+  // Load courts around this spot in the background; refresh the list if any were added.
+  const seed = useCallback(
+    async (c: Coords) => {
+      setSeeding(true);
+      const added = await seedArea(c);
+      setSeeding(false);
+      if (added > 0) await load(c);
+    },
+    [load]
+  );
+
   const locate = useCallback(async () => {
     setLocErr(null);
     try {
       const c = await getCoords();
       setLocReason(null);
+      setAsk(false);
       setCoords(c);
       await load(c);
+      seed(c);
       return c;
     } catch (e) {
       setLocErr((e as Error).message);
@@ -48,15 +65,21 @@ export function useNearby(radius = 15, sport?: Sport) {
       await load(c);
       return null;
     }
-  }, [load]);
+  }, [load, seed]);
 
   useEffect(() => {
     const c = lastCoords();
     if (c) {
       setCoords(c);
       load(c);
+      seed(c);
+      locate();
+      return;
     }
-    locate();
+    locationPermission().then((s) => {
+      if (s === "prompt") setAsk(true);
+      else locate();
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reload when the sport changes.
@@ -68,10 +91,13 @@ export function useNearby(radius = 15, sport?: Sport) {
   /** A town or ZIP typed in while location is blocked. */
   const setManual = useCallback(
     (c: Coords) => {
+      saveCoords(c);
+      setAsk(false);
       setCoords(c);
       load(c);
+      seed(c);
     },
-    [load]
+    [load, seed]
   );
-  return { coords, locErr, locReason, courts, cells, players, locate, refresh, setManual };
+  return { coords, locErr, locReason, courts, cells, players, locate, refresh, setManual, ask, seeding };
 }
