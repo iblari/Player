@@ -25,7 +25,7 @@ export default function Landing() {
           Get in a game
         </Link>
         <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
-          Free. Sign in with your email, no password.
+          Free. Takes 20 seconds to sign up.
         </p>
       </div>
 
