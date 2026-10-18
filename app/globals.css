@@ -666,3 +666,13 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .locfix-manual { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
 .locfix-row { display: flex; gap: 8px; }
 .locfix-row .input { flex: 1; min-width: 0; }
+
+/* ---------- Search everywhere + games waiting ---------- */
+.sheet-label { margin: 4px 0 -4px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.waiting { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--ball); }
+.waiting-head { display: flex; align-items: center; gap: 10px; }
+.waiting-game { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.waiting-game .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.waiting-game .t { font-weight: 700; }
+.waiting-game .m { color: var(--muted); font-size: var(--s-1); }
+.waiting-head .pulse { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--ball); animation: pulse 1.8s infinite; }

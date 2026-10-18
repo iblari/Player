@@ -380,7 +380,7 @@ export default function HomePage() {
           }}
         />
       )}
-      {sheet && <LocationSheet courts={courts} title={sheet === "later" ? "Schedule a game" : "Pick a location to play"} onPick={pick} onClose={() => setSheet(null)} />}
+      {sheet && <LocationSheet courts={courts} near={coords} sport={sport} title={sheet === "later" ? "Schedule a game" : "Pick a location to play"} onPick={pick} onClose={() => setSheet(null)} />}
     </>
   );
 }

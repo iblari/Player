@@ -7,6 +7,7 @@ import { isMissing, rpcCompat, without } from "@/lib/rpc";
 import { useSession } from "@/components/Session";
 import CourtDiagram from "@/components/CourtDiagram";
 import LocationSheet from "@/components/LocationSheet";
+import WaitingGames from "@/components/WaitingGames";
 import MembershipPrompt from "@/components/MembershipPrompt";
 import SportSwitch from "@/components/SportSwitch";
 import { useMyRatings, useSport } from "@/lib/sport";
@@ -34,7 +35,7 @@ function HostInner() {
   const params = useSearchParams();
   const { profile, userId } = useSession();
   const [sport, setSport] = useSport(profile?.sports, params.get("sport"));
-  const { courts, cells } = useNearby(25, sport);
+  const { courts, cells, coords } = useNearby(25, sport);
   const meta = SPORT_META[sport];
   const ratings = useMyRatings(userId);
   const myLevel = ratings ? (ratings[sport]?.level ?? null) : undefined;
@@ -187,6 +188,8 @@ function HostInner() {
         </span>
       </button>
 
+      {courtId && !sheet && <WaitingGames courtId={courtId} courtName={court?.name} sport={sport} userId={userId} />}
+
       {court?.sports && !court.sports.includes(sport) && (
         <div className="notice warn" role="status">
           <b>{court.name} isn&apos;t listed for {meta.label.toLowerCase()}</b>
@@ -294,6 +297,8 @@ function HostInner() {
       {sheet && (
         <LocationSheet
           courts={courts}
+          near={coords}
+          sport={sport}
           onPick={(c) => {
             setCourtId(c.id);
             setSheet(false);
