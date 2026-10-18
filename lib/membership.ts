@@ -1,5 +1,6 @@
 "use client";
 import { supabase } from "@/lib/supabase/client";
+import { track } from "@/lib/track";
 import { notifyJoined } from "@/lib/push";
 import type { MembershipAnswer } from "@/components/MembershipPrompt";
 
@@ -7,7 +8,10 @@ import type { MembershipAnswer } from "@/components/MembershipPrompt";
 export async function joinGame(id: string, confirmed = false): Promise<string> {
   const { data, error } = await supabase().rpc("join_game", { p_game: id, p_confirmed: confirmed });
   if (error) return "error";
-  if (data === "joined") notifyJoined(id);
+  if (data === "joined") {
+    notifyJoined(id);
+    track("game_joined");
+  }
   return data as string;
 }
 

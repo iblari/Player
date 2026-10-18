@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { track } from "@/lib/track";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -183,6 +184,7 @@ function HostInner() {
         sb.from("payment_handles").upsert({ user_id: userId, ...h, updated_at: new Date().toISOString() }),
       ]);
     }
+    track("game_posted", { sport, slots, paid });
     fetch("/api/notify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
     router.replace(`/g/${data}?posted=1`);
   }

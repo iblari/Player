@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { track } from "@/lib/track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -92,6 +93,7 @@ export default function ProfileView({ userId: who }: { userId: string }) {
       : await sb.from("follows").insert({ follower_id: userId, followee_id: who });
     setBusy(false);
     if (error) return toast("Couldn't update. Try again.");
+    if (!card.am_following) track("followed");
     load();
   }
 

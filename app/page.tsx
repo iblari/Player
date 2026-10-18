@@ -14,6 +14,10 @@ export default function Landing() {
         <HeroVideo />
         <header className="lp-top">
           <RallyWordmark />
+        <span className="legal-links">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </span>
           <Link className="lp-signin" href="/login">
             Sign in
           </Link>

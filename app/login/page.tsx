@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useState } from "react";
+import { track } from "@/lib/track";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import RallyWordmark from "@/components/landing/RallyWordmark";
@@ -54,11 +55,17 @@ function LoginForm() {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
         });
         if (error) throw error;
-        if (data.session) return router.replace(next === "/play" ? "/me/edit" : next);
+        if (data.session) {
+          track("sign_up", { method: "email" });
+          return router.replace(next === "/play" ? "/me/edit" : next);
+        }
         // No session back: either confirmation is on, or the email is already registered
         // (Supabase hides that by returning a user with no identities). Try signing in directly.
         const si = await sb.auth.signInWithPassword({ email: v, password });
-        if (!si.error) return router.replace(next === "/play" ? "/me/edit" : next);
+        if (!si.error) {
+          track("sign_up", { method: "email" });
+          return router.replace(next === "/play" ? "/me/edit" : next);
+        }
         if (data.user && (data.user.identities?.length ?? 0) === 0)
           setErr("That email already has an account with a different password. Sign in instead, or ask the admin to delete the old account.");
         else if (si.error.message.toLowerCase().includes("not confirmed"))
@@ -67,6 +74,7 @@ function LoginForm() {
       } else {
         const { error } = await sb.auth.signInWithPassword({ email: v, password });
         if (error) throw error;
+        track("sign_in", { method: "email" });
         router.replace(next);
       }
     } catch (e) {
@@ -79,6 +87,7 @@ function LoginForm() {
   async function google() {
     setBusy(true);
     setErr(null);
+    track("sign_in", { method: "google" });
     const { error } = await supabase().auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
@@ -155,6 +164,9 @@ function LoginForm() {
           </button>
         </form>
       )}
+          <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
+        By continuing you agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link> policy.
+      </p>
     </main>
   );
 }

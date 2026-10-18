@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { track } from "@/lib/track";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -136,6 +137,7 @@ export default function HomePage() {
       const err = await update({ available_until: until });
       await refresh();
       toast(err ?? `You're available until ${timeOf(until)}.`);
+      if (!err) track("available_on", { sport });
       load();
     } catch (e) {
       if (isDenied(e)) {

@@ -1,5 +1,6 @@
 "use client";
 import { use, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { track } from "@/lib/track";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/Session";
@@ -74,6 +75,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     setSending(false);
     if (error) return toast("Couldn't send. Try again.");
     push(data as Msg);
+    track("chat_sent");
     setText("");
     box.current?.focus();
     fetch("/api/notify-chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messageId: (data as Msg).id }) }).catch(() => {});

@@ -2,14 +2,20 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import { SessionProvider } from "@/components/Session";
 import { ToastProvider } from "@/components/Toast";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const barlow = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-barlow" });
 const barlowCondensed = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-barlow-condensed" });
 
+const DESC = "Match with pickleball and tennis players near you within minutes. Pick a court, post a game, and watch it fill. Free.";
+
 export const metadata: Metadata = {
-  title: "Let's Rally",
-  description: "Find pickleball and tennis players near you. Go available, post a game at your court, and watch it fill.",
+  metadataBase: new URL("https://www.letslarp.io"),
+  title: "Let's Rally · Find pickleball & tennis players near you",
+  description: DESC,
+  openGraph: { title: "Let's Rally", description: DESC, url: "https://www.letslarp.io", siteName: "Let's Rally", type: "website" },
+  twitter: { card: "summary_large_image", title: "Let's Rally", description: DESC },
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Let's Rally", statusBarStyle: "black-translucent" },
 };
@@ -28,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionProvider>
           <ToastProvider>{children}</ToastProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );

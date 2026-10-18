@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { track } from "@/lib/track";
 import { supabase } from "@/lib/supabase/client";
 import { isMissing } from "@/lib/rpc";
 import { useToast } from "@/components/Toast";
@@ -150,6 +151,7 @@ export default function GameResult({
       toast(`Score sent. ${nameOf(hostId)} confirms it, or it's final in 24 hours.`);
       fetch("/api/notify-score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId }) }).catch(() => {});
     } else toast("Final score saved. Ratings updated.");
+    track("score_saved", { games: sets.length, status: status ?? "final" });
     setEditing(false);
     load();
     onScored?.();

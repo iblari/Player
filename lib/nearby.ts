@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { track } from "@/lib/track";
 import { rpcCompat, without } from "@/lib/rpc";
 import { GeoError, getCoords, lastCoords, locationPermission, saveCoords, type Coords, type GeoReason } from "@/lib/geo";
 import { seedArea } from "@/lib/seed";
@@ -50,8 +51,10 @@ export function useNearby(radius = 15, sport?: Sport) {
   const locate = useCallback(async () => {
     setLocErr(null);
     try {
+      const first = !lastCoords();
       const c = await getCoords();
       setLocReason(null);
+      if (first) track("location_set", { how: "gps" });
       setAsk(false);
       setCoords(c);
       await load(c);
@@ -91,6 +94,7 @@ export function useNearby(radius = 15, sport?: Sport) {
   /** A town or ZIP typed in while location is blocked. */
   const setManual = useCallback(
     (c: Coords) => {
+      track("location_set", { how: "town" });
       saveCoords(c);
       setAsk(false);
       setCoords(c);

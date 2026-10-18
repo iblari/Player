@@ -872,3 +872,13 @@ a.mf-back { text-decoration: none; }
 .games-line b.win { color: var(--ball); }
 .games-table.compact { padding: 10px 12px; border-radius: 14px; background: var(--sunk); }
 .act-games { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -2px; } .act-games span { font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--sunk); color: var(--muted); } .act-games span.w { color: var(--ball); }
+
+/* ---------- Legal pages ---------- */
+.legal { gap: 14px; max-width: 680px; line-height: 1.55; }
+.legal h1 { font-size: 2.4rem; }
+.legal h2 { font-size: 1.2rem; margin-top: 10px; }
+.legal p, .legal ul { margin: 0; color: #d4d4d4; }
+.legal ul { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.legal a { color: var(--ball); }
+.legal-links { display: flex; gap: 14px; font-size: 12.5px; }
+.legal-links a { color: var(--muted); }
