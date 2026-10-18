@@ -6,7 +6,21 @@ import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
 const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 
+// The one address production should be seen on. Vercel also serves production on its own
+// *.vercel.app aliases; send those here so sign-ins, cookies and shared links stay on one domain.
+// Preview deployments (VERCEL_ENV=preview) keep their own URLs for testing.
+const CANONICAL_HOST = process.env.CANONICAL_HOST || "letslarp.io";
+
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host") ?? "";
+  if (process.env.VERCEL_ENV === "production" && host.endsWith(".vercel.app")) {
+    const to = request.nextUrl.clone();
+    to.protocol = "https:";
+    to.host = CANONICAL_HOST;
+    to.port = "";
+    return NextResponse.redirect(to, 308);
+  }
+
   // Supabase falls back to the Site URL (often "/") when a redirect URL isn't allow-listed,
   // so catch a sign-in code on any page and finish sign-in properly.
   const code = request.nextUrl.searchParams.get("code");
