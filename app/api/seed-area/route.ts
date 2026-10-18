@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const done = (rows0 ?? []).filter((r) => r.found !== null);
   const loading = (rows0 ?? []).filter((r) => r.found === null && fresh(r));
   if (done.length === cells.length) return NextResponse.json({ added: 0, reason: "already_loaded" });
-  if (loading.length) return NextResponse.json({ added: 0, reason: "loading" });
+  if (done.length + loading.length === cells.length) return NextResponse.json({ added: 0, reason: "loading" });
 
   // Gentle on the free map servers and on us.
   const { count } = await db
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   await db.from("court_seed_cells").upsert(cells.map((cell) => ({ cell, seeded_at: new Date().toISOString(), found: null })));
 
   let els: OsmEl[] | null = null;
+  const errs: string[] = [];
   const q = overpassQuery(bbox);
   for (const url of MIRRORS) {
     try {
@@ -55,17 +56,20 @@ export async function POST(request: Request) {
         body: "data=" + encodeURIComponent(q),
         signal: AbortSignal.timeout(150000),
       });
-      if (!r.ok) continue;
+      if (!r.ok) {
+        errs.push(`${new URL(url).host} ${r.status} ${(await r.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 160)}`);
+        continue;
+      }
       els = ((await r.json()) as { elements: OsmEl[] }).elements;
       break;
-    } catch {
-      /* try the next mirror */
+    } catch (e) {
+      errs.push(`${new URL(url).host} ${(e as Error).name}: ${(e as Error).message}`.slice(0, 160));
     }
   }
   if (!els) {
     // Release the claim so the next visitor retries.
     await db.from("court_seed_cells").delete().in("cell", cells).is("found", null);
-    return NextResponse.json({ added: 0, reason: "map_unavailable" }, { status: 502 });
+    return NextResponse.json({ added: 0, reason: "map_unavailable", detail: errs }, { status: 502 });
   }
 
   const rows = toCourtRows(els);
