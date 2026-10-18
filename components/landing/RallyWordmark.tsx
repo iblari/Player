@@ -1,14 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// "Let's rally / let's play" around the world. Rally doesn't translate naturally, so the
-// other languages use their everyday "let's play" (Chinese: "let's play ball together").
+// "Let's rally", then "let's play", in each language.
+// Chinese 对打 is the word for hitting back and forth; Spanish "pelotear" is the tennis word
+// for rallying; Hindi and Urdu players use the English loanword "rally".
 const WORDS: { text: string; lang: string; dir?: "rtl" }[] = [
   { text: "Let's rally", lang: "en" },
   { text: "Let's play", lang: "en" },
+  { text: "来对打吧", lang: "zh-Hans" },
   { text: "一起打球吧", lang: "zh-Hans" },
+  { text: "¡Vamos a pelotear!", lang: "es" },
   { text: "¡Vamos a jugar!", lang: "es" },
+  { text: "چلو ریلی کریں", lang: "ur", dir: "rtl" },
   { text: "چلو کھیلیں", lang: "ur", dir: "rtl" },
+  { text: "चलो रैली करें", lang: "hi" },
   { text: "चलो खेलें", lang: "hi" },
 ];
 
@@ -18,7 +23,7 @@ export default function RallyWordmark() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setI((x) => (x + 1) % WORDS.length), 2200);
+    const t = setInterval(() => setI((x) => (x + 1) % WORDS.length), 2000);
     return () => clearInterval(t);
   }, []);
 
