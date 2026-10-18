@@ -2,12 +2,30 @@
 import { useCallback, useEffect, useState } from "react";
 import { track } from "@/lib/track";
 import { rpcCompat, without } from "@/lib/rpc";
+import { supabase } from "@/lib/supabase/client";
 import { GeoError, getCoords, lastCoords, locationPermission, saveCoords, type Coords, type GeoReason } from "@/lib/geo";
 import { seedArea } from "@/lib/seed";
 import type { Court, Sport } from "@/lib/types";
 import type { PlayerCell } from "@/components/PlayerMap";
 
 export const FALLBACK: Coords = { lat: 40.7128, lng: -74.006 };
+
+const AREA_KEY = "saved-area";
+function saveArea(c: Coords) {
+  const r = { lat: Math.round(c.lat * 100) / 100, lng: Math.round(c.lng * 100) / 100 };
+  const key = `${r.lat},${r.lng}`;
+  try {
+    if (localStorage.getItem(AREA_KEY) === key) return;
+  } catch {}
+  supabase()
+    .rpc("set_location", r)
+    .then(({ error }) => {
+      if (!error)
+        try {
+          localStorage.setItem(AREA_KEY, key);
+        } catch {}
+    });
+}
 
 /** Location + nearby courts + available-player cells for a sport, refreshed on demand. */
 export function useNearby(radius = 15, sport?: Sport) {
@@ -38,8 +56,11 @@ export function useNearby(radius = 15, sport?: Sport) {
   );
 
   // Load courts around this spot in the background; refresh the list if any were added.
+  // Also save the player's rough area (about 1 km) so they count toward nearby supply and
+  // get matched, even before they ever turn on "down to play".
   const seed = useCallback(
     async (c: Coords) => {
+      saveArea(c);
       setSeeding(true);
       const added = await seedArea(c);
       setSeeding(false);

@@ -17,7 +17,7 @@ export default function Privacy() {
       <ul>
         <li><b>Account:</b> your email, and your name and photo if you sign in with Google or add them.</li>
         <li><b>Profile:</b> the sports you play, your self-rated level, clubs you say you belong to, and the name and photo you choose to show.</li>
-        <li><b>Location:</b> only when you allow it or type a town or ZIP. We use it to show nearby courts and players and to tell nearby players about games. When you go available we store an approximate location; other players only see a rough area, never your exact spot.</li>
+        <li><b>Location:</b> only when you allow it or type a town or ZIP. We use it to show nearby courts and players and to tell nearby players about games. We store your approximate area (about 1 km) so nearby players and games can find you, and your location when you go available. Other players only see a rough area, never your exact spot.</li>
         <li><b>Games:</b> games you host or join, scores, ratings, attendance, level feedback you give, and messages in a game&apos;s chat.</li>
         <li><b>Payments:</b> if you host a paid court, the Venmo, Cash App, PayPal or Zelle handle you enter. We never handle money or card details; payment apps open outside our site.</li>
         <li><b>Notifications:</b> if you turn them on, a push token for your device.</li>

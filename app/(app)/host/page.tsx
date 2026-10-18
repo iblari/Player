@@ -59,6 +59,14 @@ function HostInner() {
   const [handles, setHandles] = useState<Handles>({});
   const [handlesLoaded, setHandlesLoaded] = useState(false);
   const [supply, setSupply] = useState<{ available: number; nearby: number } | null>(null);
+  // How past games actually filled vs the model; k = 1 until there's data.
+  const [cal, setCal] = useState<{ k: number; games: number; filled: number } | null>(null);
+  useEffect(() => {
+    supabase()
+      .rpc("fill_calibration")
+      .then(({ data }) => data && setCal({ k: Number((data as { k: number }).k) || 1, games: (data as { games: number }).games, filled: (data as { filled: number }).filled }));
+  }, []);
+  const k = cal && cal.games >= 5 ? cal.k : 1;
   const [extra, setExtra] = useState<Court | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -124,8 +132,8 @@ function HostInner() {
     return new Date(Date.now() + Number(start) * 60000);
   }, [start, picked]);
 
-  const doubles = supply ? fillChance(supply.available, supply.nearby, 3) : null;
-  const singles = supply ? fillChance(supply.available, supply.nearby, 1) : null;
+  const doubles = supply ? fillChance(supply.available, supply.nearby, 3, k) : null;
+  const singles = supply ? fillChance(supply.available, supply.nearby, 1, k) : null;
   const chosen = slots === 4 ? doubles : singles;
 
   async function submit(confirmed = false) {
@@ -185,6 +193,8 @@ function HostInner() {
       ]);
     }
     track("game_posted", { sport, slots, paid });
+    // Snapshot the model's inputs so fill chance can learn from how this game turns out.
+    if (supply) supabase().from("games").update({ supply_available: supply.available, supply_nearby: supply.nearby }).eq("id", data).then(() => {});
     fetch("/api/notify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
     router.replace(`/g/${data}?posted=1`);
   }
@@ -260,8 +270,17 @@ function HostInner() {
                 <span className="m">{o.m}</span>
               </span>
               <span className="r">
-                <b>{pct(o.est)}</b>
-                <span className="m">fill chance</span>
+                {o.est && o.est.lambda === 0 ? (
+                  <>
+                    <b>New</b>
+                    <span className="m">area</span>
+                  </>
+                ) : (
+                  <>
+                    <b>{pct(o.est)}</b>
+                    <span className="m">fill chance</span>
+                  </>
+                )}
               </span>
             </button>
           ))}
@@ -374,8 +393,17 @@ function HostInner() {
 
       {supply && chosen && (
         <p className="small muted" style={{ margin: 0 }}>
-          {supply.available} available now and {supply.nearby} others play near here at {fmtSkill(min)}–{fmtSkill(max)}. Poisson estimate, λ = {chosen.lambda.toFixed(2)},
-          assuming {Math.round(YES_RATE_AVAILABLE * 100)}% of available and {Math.round(YES_RATE_NEARBY * 100)}% of other players say yes.
+          {chosen.lambda === 0 ? (
+            <>No players at {fmtSkill(min)}–{fmtSkill(max)} near here yet. Post anyway: everyone who signs up or goes available nearby can see it, and the fill chance rises as players join this area.</>
+          ) : (
+            <>
+              {supply.available} available now and {supply.nearby} others play near here at {fmtSkill(min)}–{fmtSkill(max)}. Poisson estimate, λ = {chosen.lambda.toFixed(2)},
+              assuming {Math.round(YES_RATE_AVAILABLE * k * 100)}% of available and {Math.round(Math.min(1, YES_RATE_NEARBY * k) * 100)}% of other players say yes
+              {cal && cal.games >= 5
+                ? `, learned from ${cal.games} past games (${Math.round((cal.filled / cal.games) * 100)}% filled).`
+                : ". These rates start as estimates and learn from real games."}
+            </>
+          )}
         </p>
       )}
 

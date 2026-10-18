@@ -229,5 +229,20 @@ await set(P[3]);
 const act5 = (await db.query(`select games, won from player_activities($1) where game_id = $2`, [P[3], g5])).rows[0];
 ok(act5 && act5.games.length === 3 && act5.won === false, "activities include every game");
 
+// --- Fill chance calibration
+await db.exec("alter table games add column if not exists expires_at timestamptz;");
+const MIG7 = new URL("../migrations/20261018210000_fill_learning.sql", import.meta.url).pathname;
+await db.exec(readFileSync(MIG7, "utf8"));
+await db.exec(readFileSync(MIG7, "utf8"));
+let cal = (await db.query(`select fill_calibration() as c`)).rows[0].c;
+ok(Number(cal.k) === 1 && cal.games === 0, `no data: k = 1 (starting assumptions): ${JSON.stringify(cal)}`);
+// 10 resolved singles games, each expected 0.35*2 = 0.7 joins, all filled (1 join each): players beat the guess.
+for (let i = 0; i < 10; i++) {
+  const gx = (await db.query(`insert into games (host_id, court_id, slots, skill_min, skill_max, starts_at, expires_at, sport, status, supply_available, supply_nearby) values ($1, $2, 2, 2, 6, now() - interval '2 hours', now() - interval '1 hour', 'pickleball', 'full', 2, 0) returning id`, [P[2], court])).rows[0].id;
+  await db.query(`insert into game_players (game_id, player_id) values ($1, $2), ($1, $3)`, [gx, P[2], P[3]]);
+}
+cal = (await db.query(`select fill_calibration() as c`)).rows[0].c;
+ok(cal.games === 10 && Number(cal.k) > 1.1 && Number(cal.k) < 1.5, `more joins than expected → k rises with shrinkage: ${JSON.stringify(cal)}`);
+
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
 process.exit(fails ? 1 : 0);

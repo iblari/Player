@@ -56,8 +56,9 @@ export function poissonAtLeast(lambda: number, k: number): number {
 export const YES_RATE_AVAILABLE = 0.35;
 export const YES_RATE_NEARBY = 0.04;
 
-export function fillChance(available: number, nearby: number, need: number) {
-  const lambda = available * YES_RATE_AVAILABLE + nearby * YES_RATE_NEARBY;
+/** k scales the response rates; it's learned from how past games actually filled (fill_calibration). */
+export function fillChance(available: number, nearby: number, need: number, k = 1) {
+  const lambda = k * (available * YES_RATE_AVAILABLE + nearby * YES_RATE_NEARBY);
   return { lambda, p: poissonAtLeast(lambda, need) };
 }
 
