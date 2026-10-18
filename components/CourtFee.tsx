@@ -61,7 +61,7 @@ export default function CourtFee({
   const links = h ? payLinks(h, each, note) : [];
 
   return (
-    <div className="fee-card">
+    <div className="fee-card" data-clarity-mask="true">
       <div className="fee-head">
         <span className="fee-big">{money(each)}</span>
         <span className="grow">

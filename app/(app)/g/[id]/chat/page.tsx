@@ -113,7 +113,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         </div>
       </header>
 
-      <div className="chat-list" aria-live="polite">
+      <div className="chat-list" aria-live="polite" data-clarity-mask="true">
         {!ready ? (
           <div className="skeleton" style={{ minHeight: 120 }} />
         ) : missing ? (

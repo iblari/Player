@@ -362,7 +362,7 @@ function HostInner() {
               </p>
             )}
             <span className="opt-label">Players pay you with</span>
-            <div className="handles">
+            <div className="handles" data-clarity-mask="true">
               {(
                 [
                   ["venmo", "Venmo", "@username"],

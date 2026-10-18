@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import { SessionProvider } from "@/components/Session";
 import { ToastProvider } from "@/components/Toast";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import "./globals.css";
 
 const barlow = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-barlow" });
@@ -35,6 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastProvider>{children}</ToastProvider>
         </SessionProvider>
         <Analytics />
+        {/* Microsoft Clarity: heatmaps and session recordings (sensitive areas are masked with data-clarity-mask). */}
+        <Script id="clarity" strategy="afterInteractive">
+          {`(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "yzv3qy3glu");`}
+        </Script>
       </body>
     </html>
   );

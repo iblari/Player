@@ -21,7 +21,7 @@ export default function Privacy() {
         <li><b>Games:</b> games you host or join, scores, ratings, attendance, level feedback you give, and messages in a game&apos;s chat.</li>
         <li><b>Payments:</b> if you host a paid court, the Venmo, Cash App, PayPal or Zelle handle you enter. We never handle money or card details; payment apps open outside our site.</li>
         <li><b>Notifications:</b> if you turn them on, a push token for your device.</li>
-        <li><b>Usage:</b> anonymous page views and feature events (for example, &quot;game posted&quot;) through Vercel Web Analytics, which doesn&apos;t use cookies.</li>
+        <li><b>Usage:</b> page views and feature events (for example, &quot;game posted&quot;) through Vercel Web Analytics, and how pages are used (clicks, scrolls, session replays) through Microsoft Clarity, which uses cookies. Chat messages, payment details and typed text are masked from recordings.</li>
       </ul>
 
       <h2>Who sees what</h2>
@@ -32,7 +32,7 @@ export default function Privacy() {
       </ul>
 
       <h2>Who we share it with</h2>
-      <p>We don&apos;t sell your data or use it for advertising. We use service providers to run the app: Supabase (database and sign-in), Vercel (hosting and analytics), Google (if you sign in with Google), OpenStreetMap services (maps and place search; searches you type are sent to them), and your browser&apos;s push service for notifications.</p>
+      <p>We don&apos;t sell your data or use it for advertising. We use service providers to run the app: Supabase (database and sign-in), Vercel (hosting and analytics), Microsoft Clarity (usage analytics), Google (if you sign in with Google), OpenStreetMap services (maps and place search; searches you type are sent to them), and your browser&apos;s push service for notifications.</p>
 
       <h2>Your choices</h2>
       <ul>
