@@ -66,3 +66,13 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array {
   const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
+
+/** A past moment as a short label: "Today 2:54 PM", "Yesterday 6:10 PM", "Sat 2:54 PM", "Oct 3". */
+export function pastLabel(iso: string | number | Date): string {
+  const d = new Date(iso);
+  const day = (n: number) => new Date(Date.now() - n * 864e5).toDateString();
+  if (d.toDateString() === day(0)) return `Today ${timeOf(d)}`;
+  if (d.toDateString() === day(1)) return `Yesterday ${timeOf(d)}`;
+  if (Date.now() - d.getTime() < 6 * 864e5) return `${d.toLocaleDateString([], { weekday: "short" })} ${timeOf(d)}`;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}

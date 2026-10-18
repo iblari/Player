@@ -15,14 +15,14 @@ import RecommendedCourts from "@/components/RecommendedCourts";
 import SportSwitch from "@/components/SportSwitch";
 import { useSport } from "@/lib/sport";
 import Avatar from "@/components/Avatar";
-import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
+import { ChevronIcon, ClockIcon, PlusIcon, SearchIcon } from "@/components/Icons";
 import { getCoords, isDenied, lastCoords } from "@/lib/geo";
 import LocationFix from "@/components/LocationFix";
 import WhereYouPlay from "@/components/WhereYouPlay";
 import { useNearby } from "@/lib/nearby";
 import { fetchMyGames, fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames, type GameView } from "@/lib/games";
 import { isAvailable, SPORT_META, type Court, type PlayerLite } from "@/lib/types";
-import { fmtSkill, miles, timeOf, when } from "@/lib/util";
+import { fmtSkill, miles, pastLabel, timeOf, when } from "@/lib/util";
 
 const PlayerMap = dynamic(() => import("@/components/PlayerMap"), { ssr: false });
 
@@ -51,6 +51,7 @@ export default function HomePage() {
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [busy, setBusy] = useState(false);
   const [showOpts, setShowOpts] = useState(false);
+  const [allGames, setAllGames] = useState(false);
   const [ask, setAsk] = useState<GameView | null>(null);
   const [recommended, setRecommended] = useState<Court[] | null>(null);
   const sportLabel = SPORT_META[sport].label;
@@ -86,9 +87,10 @@ export default function HomePage() {
   });
 
   const recents = useMemo(() => {
-    const fromHistory = recent.map((r) => ({ id: r.id, name: r.name, sub: `Last played ${when(r.last_played)}` }));
+    const short = (n: string) => n.replace(/^(Tennis|Pickleball|Tennis & pickleball) courts · /, "");
+    const fromHistory = recent.map((r) => ({ id: r.id, name: short(r.name), sub: pastLabel(r.last_played) }));
     if (fromHistory.length) return fromHistory;
-    return (courts ?? []).slice(0, 2).map((c) => ({ id: c.id, name: c.name, sub: `${miles(c.distance_mi)} away${c.court_count ? ` · ${c.court_count} courts` : ""}` }));
+    return (courts ?? []).slice(0, 2).map((c) => ({ id: c.id, name: short(c.name), sub: `${miles(c.distance_mi)} away` }));
   }, [recent, courts]);
 
   const availableCount = cells.reduce((s, c) => s + c.players, 0);
@@ -162,66 +164,65 @@ export default function HomePage() {
   const visible = games?.filter((g) => (g.sport ?? "pickleball") === sport) ?? null;
 
   return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <SportSwitch value={sport} onChange={setSport} />
-          <Link href="/me" aria-label="Account" style={{ flex: "none" }}>
-            {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={40} src={profile?.avatar_url} />}
-          </Link>
-        </div>
-        <h1>{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
+    <div className="home">
+      <div className="home-top">
+        <SportSwitch value={sport} onChange={setSport} />
+        <Link href="/me" aria-label="Account" style={{ flex: "none", marginLeft: "auto" }}>
+          {userId && <Avatar id={userId} name={profile?.display_name || "You"} size={34} src={profile?.avatar_url} />}
+        </Link>
       </div>
+      <h1 className="home-hi">{firstName ? `Hi, ${firstName}` : "Find a game"}</h1>
 
       {askWhere && <WhereYouPlay onLocate={locate} onPlace={(pt) => setManual(pt)} />}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div className="search-pill" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>
-          <SearchIcon />
-          <span className="label">Where are you playing {sportLabel.toLowerCase()}?</span>
-          <button
-            className="later"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSheet("later");
-            }}
-          >
-            <CalendarIcon /> Later
-          </button>
-        </div>
-
-        {recents.length > 0 && (
-          <div className="list">
-            {recents.map((r) => (
-              <Link key={r.id} className="list-row" href={`/host?court=${r.id}&sport=${sport}`}>
-                <span className="icon-circle">
-                  <ClockIcon />
-                </span>
-                <span className="grow">
-                  <span className="t">{r.name}</span>
-                  <span className="m">{r.sub}</span>
-                </span>
-                <span className="chev">
-                  <ChevronIcon />
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
+      <div className="home-search" role="button" tabIndex={0} onClick={() => setSheet("now")} onKeyDown={(e) => e.key === "Enter" && setSheet("now")}>
+        <SearchIcon />
+        <span className="label">Where to play?</span>
+        <button
+          className="when-btn"
+          aria-label="Schedule for later"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSheet("later");
+          }}
+        >
+          <ClockIcon /> Now <span aria-hidden="true">▾</span>
+        </button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <div className={`avail-strip${avail ? " on" : ""}`}>
-          <button className="grow" style={{ background: "none", border: 0, padding: 0, textAlign: "left", color: "inherit", cursor: "pointer" }} onClick={() => setShowOpts((x) => !x)} aria-expanded={showOpts}>
-            <b>{avail ? "You're down to play" : "Not available"}</b>
-            <span>
-              {avail ? `Until ${timeOf(profile!.available_until!)} · within ${profile!.radius_mi} mi · tap to change` : "Turn on so players nearby can ping you"}
+      <div className="home-chips" aria-label="Recent courts">
+        {recents.map((r) => (
+          <Link key={r.id} className="home-chip" href={`/host?court=${r.id}&sport=${sport}`}>
+            <span className="ci">
+              <ClockIcon />
             </span>
+            <span className="tx">
+              <b>{r.name}</b>
+              <small>{r.sub}</small>
+            </span>
+          </Link>
+        ))}
+        <Link className="home-chip" href="/courts?add=1">
+          <span className="ci">
+            <PlusIcon />
+          </span>
+          <span className="tx">
+            <b>Add court</b>
+            <small>Not listed?</small>
+          </span>
+        </Link>
+      </div>
+
+      <div>
+        <div className={`avail-strip slim${avail ? " on" : ""}`}>
+          <button className="grow" onClick={() => setShowOpts((x) => !x)} aria-expanded={showOpts}>
+            <b>{avail ? "Down to play" : "Not available"}</b>
+            <span>{avail ? ` · until ${timeOf(profile!.available_until!)} · ${profile!.radius_mi} mi` : " · players can't ping you"}</span>
           </button>
           <button className="switch" role="switch" aria-checked={avail} aria-label={avail ? "Stop being available" : "Go available"} disabled={busy} onClick={() => (avail ? stop() : goAvailable())} />
         </div>
         {showOpts && (
-          <div className="avail-opts">
+          <div className="avail-opts" style={{ marginTop: 8 }}>
             <div className="opt-group">
               <span className="opt-label">Free for</span>
               <div className="segbar segbar-5" role="group" aria-label="Available for">
@@ -268,32 +269,82 @@ export default function HomePage() {
         )}
       </div>
 
-      {next && (
-        <Link className="list" href={`/g/${next.id}`} style={{ textDecoration: "none" }}>
-          <span className="list-row">
-            <span style={{ width: 72, flex: "none" }}>
+      {next && (() => {
+        const started = new Date(next.starts_at).getTime() < Date.now();
+        const full = next.player_ids.length >= next.slots;
+        return (
+          <Link className="home-next" href={`/g/${next.id}`}>
+            <span className="mc">
               <CourtDiagram size="sm" slots={next.slots} players={next.player_ids.map((id) => ({ id, name: names(id), isMe: id === userId }))} />
             </span>
-            <span className="grow">
-              <span className="m">Up next · {SPORT_META[next.sport ?? "pickleball"].label}</span>
-              <span className="t">{next.court_name}</span>
-              <span className="m">
-                {when(next.starts_at)} · {next.player_ids.length}/{next.slots} in
-              </span>
+            <span className="tx">
+              <b>{next.court_name}</b>
+              <small>
+                {started ? "In progress" : full ? "Game on" : "Up next"} · {when(next.starts_at)}
+              </small>
             </span>
-            <span className="chev">
-              <ChevronIcon />
+            <span className={`pill${full ? " pill-ball" : ""}`}>
+              {next.player_ids.length}/{next.slots}
             </span>
-          </span>
-        </Link>
-      )}
+          </Link>
+        );
+      })()}
 
-      <section className="block">
-        <div className="block-head">
+      <section className="home-sec">
+        <div className="home-sec-head">
+          <h2>Games near you</h2>
+          {visible && visible.length > 3 && (
+            <button className="link-btn" onClick={() => setAllGames((x) => !x)}>
+              {allGames ? "Show less" : `See all ${visible.length}`}
+            </button>
+          )}
+        </div>
+        {visible === null ? (
+          <div className="skeleton" style={{ minHeight: 56 }} />
+        ) : !profile?.location ? (
+          <p className="home-empty">Go available once and games near you show up here.</p>
+        ) : visible.length === 0 ? (
+          <p className="home-empty">
+            No open {sportLabel.toLowerCase()} games within {profile?.radius_mi} mi at your level. Pick a court and be the first.
+          </p>
+        ) : (
+          <div className="home-games">
+            {(allGames ? visible : visible.slice(0, 3)).map((g) => {
+              const left = g.slots - g.player_ids.length;
+              return (
+                <div className="home-game" key={g.id}>
+                  <Link href={`/g/${g.id}`} className="mc" aria-label={`Open game at ${g.court_name}`}>
+                    <CourtDiagram size="sm" slots={g.slots} players={g.player_ids.map((id) => ({ id, name: names(id) }))} />
+                  </Link>
+                  <Link href={`/g/${g.id}`} className="tx">
+                    <b>
+                      {g.slots === 4 ? "Doubles" : "Singles"} · {g.court_name}
+                    </b>
+                    <small>
+                      {g.distance_mi != null ? `${miles(g.distance_mi)} · ` : ""}
+                      {when(g.starts_at).replace(/^today /, "")} · needs {left} · {fmtSkill(g.skill_min)}–{fmtSkill(g.skill_max)}
+                      {g.members_only ? ` · ${g.club ?? "Members"} only` : ""}
+                    </small>
+                  </Link>
+                  <button className="join-btn" onClick={() => join(g.id)}>
+                    Join
+                  </button>
+                  <button className="pass-btn" onClick={() => pass(g.id)} aria-label={`Pass on game at ${g.court_name}`}>
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="home-sec">
+        <div className="home-sec-head">
           <h2>Available players</h2>
           <Link href="/courts">All courts</Link>
         </div>
-        <div className="livemap">
+        <div className="livemap home-map">
           {coords && <PlayerMap center={coords} me={coords} cells={cells} courts={courts ?? []} onCourt={(id) => router.push(`/host?court=${id}`)} />}
           <div className="livemap-head">
             <span className="chip-live">
@@ -302,17 +353,11 @@ export default function HomePage() {
             </span>
           </div>
         </div>
-        {locErr && locReason ? (
-          <LocationFix reason={locReason} message={locErr} onRetry={locate} onManual={(pt) => setManual(pt)} />
-        ) : (
-          <p className="small muted" style={{ margin: 0 }}>
-            Yellow circles are players who are free right now, grouped by area. Tap a court to start a game there.
-          </p>
-        )}
+        {locErr && locReason && <LocationFix reason={locReason} message={locErr} onRetry={locate} onManual={(pt) => setManual(pt)} />}
       </section>
 
-      <section className="block">
-        <div className="block-head">
+      <section className="home-sec">
+        <div className="home-sec-head">
           <h2>Recommended courts</h2>
           <Link href="/courts">See all</Link>
         </div>
@@ -320,54 +365,6 @@ export default function HomePage() {
         <p className="small muted" style={{ margin: 0, fontSize: 11 }}>
           Court data includes © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors.
         </p>
-      </section>
-
-      <section className="block">
-        <div className="block-head">
-          <h2>{sportLabel} games that need you</h2>
-          <span className="count">{visible?.length || ""}</span>
-        </div>
-        {visible === null ? (
-          <div className="skeleton" />
-        ) : !profile?.location ? (
-          <div className="empty">
-            <strong>Go available once to see games near you.</strong>
-            <span>It saves where you are so hosts nearby can find you.</span>
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="empty">
-            <strong>No open {sportLabel.toLowerCase()} games within {profile?.radius_mi} mi at your level.</strong>
-            <span>Pick a court above and be the first.</span>
-          </div>
-        ) : (
-          <div className="hscroll">
-            {visible.map((g) => {
-              const left = g.slots - g.player_ids.length;
-              return (
-                <div className="gcard" key={g.id}>
-                  <Link href={`/g/${g.id}`} className="gcard-court" aria-label={`Open game at ${g.court_name}`}>
-                    <CourtDiagram size="sm" slots={g.slots} players={g.player_ids.map((id) => ({ id, name: names(id) }))} />
-                    <span className={`pill badge ${left === 1 ? "pill-ball" : ""}`}>Need {left}</span>
-                    {g.members_only && <span className="pill" style={{ position: "absolute", right: 10, top: 10 }}>{g.club ?? "Members"} only</span>}
-                  </Link>
-                  <span className="gcard-title">{g.court_name}</span>
-                  <span className="gcard-meta">
-                    {g.slots === 4 ? "Doubles" : "Singles"} · {when(g.starts_at)} · {fmtSkill(g.skill_min)}–{fmtSkill(g.skill_max)}
-                    {g.distance_mi != null ? ` · ${miles(g.distance_mi)}` : ""}
-                  </span>
-                  <div className="gcard-actions">
-                    <button className="btn btn-sm btn-primary" onClick={() => join(g.id)}>
-                      I&apos;m in
-                    </button>
-                    <button className="btn btn-sm" onClick={() => pass(g.id)}>
-                      Pass
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </section>
 
       {ask && (
@@ -386,6 +383,6 @@ export default function HomePage() {
         />
       )}
       {sheet && <LocationSheet courts={courts} near={coords} sport={sport} title={sheet === "later" ? "Schedule a game" : "Pick a location to play"} onPick={pick} onClose={() => setSheet(null)} />}
-    </>
+    </div>
   );
 }
