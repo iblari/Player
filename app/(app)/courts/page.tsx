@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { rpcCompat, without } from "@/lib/rpc";
 import { useToast } from "@/components/Toast";
-import { getCoords, lastCoords, type Coords } from "@/lib/geo";
+import { GeoError, getCoords, lastCoords, type Coords, type GeoReason } from "@/lib/geo";
+import LocationFix from "@/components/LocationFix";
 import { SPORTS, SPORT_META, type Court, type Sport } from "@/lib/types";
 import { miles } from "@/lib/util";
 import PlaceSearch from "@/components/PlaceSearch";
@@ -28,6 +29,7 @@ function CourtsInner() {
   const [center, setCenter] = useState<Coords>(FALLBACK);
   const [courts, setCourts] = useState<Court[] | null>(null);
   const [locErr, setLocErr] = useState<string | null>(null);
+  const [locReason, setLocReason] = useState<GeoReason>("unavailable");
   const [adding, setAdding] = useState(params.get("add") === "1");
   const [pin, setPin] = useState<Coords>(FALLBACK);
   const [name, setName] = useState("");
@@ -60,6 +62,7 @@ function CourtsInner() {
       load(c);
     } catch (e) {
       setLocErr((e as Error).message);
+      setLocReason(e instanceof GeoError ? e.reason : "unavailable");
       load(center);
     }
   }, [load, center]);
@@ -123,13 +126,17 @@ function CourtsInner() {
 
       {!adding && <SportSwitch value={sport} onChange={setSport} />}
 
-      {locErr && (
-        <div className="notice">
-          <span>{locErr}</span>
-          <button className="btn btn-sm" onClick={locate}>
-            Try again
-          </button>
-        </div>
+      {locErr && !adding && (
+        <LocationFix
+          reason={locReason}
+          message={locErr}
+          onRetry={locate}
+          onManual={(pt) => {
+            setCenter(pt);
+            setPin(pt);
+            load(pt);
+          }}
+        />
       )}
 
       {adding ? (

@@ -16,7 +16,8 @@ import SportSwitch from "@/components/SportSwitch";
 import { useSport } from "@/lib/sport";
 import Avatar from "@/components/Avatar";
 import { CalendarIcon, ChevronIcon, ClockIcon, SearchIcon } from "@/components/Icons";
-import { getCoords } from "@/lib/geo";
+import { getCoords, isDenied, lastCoords } from "@/lib/geo";
+import LocationFix from "@/components/LocationFix";
 import { useNearby } from "@/lib/nearby";
 import { fetchMyGames, fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames, type GameView } from "@/lib/games";
 import { isAvailable, SPORT_META, type Court, type PlayerLite } from "@/lib/types";
@@ -35,7 +36,7 @@ export default function HomePage() {
   const toast = useToast();
   const { userId, profile, update, refresh } = useSession();
   const [sport, setSport] = useSport(profile?.sports);
-  const { coords, locErr, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap } = useNearby(15, sport);
+  const { coords, locErr, locReason, courts, cells, players: nearbyPlayers, locate, refresh: refreshMap, setManual } = useNearby(15, sport);
   const [sheet, setSheet] = useState<null | "now" | "later">(null);
   const [recent, setRecent] = useState<Recent[]>([]);
   const [dur, setDur] = useState<number | "pick" | null>(null);
@@ -113,7 +114,12 @@ export default function HomePage() {
     if (untilDate.getTime() - Date.now() > 16 * 3600e3) return toast("Pick a time within the next 16 hours.");
     setBusy(true);
     try {
-      const c = await getCoords();
+      // Location blocked but they typed a town: use that area.
+      const c = await getCoords().catch((e) => {
+        const typed = lastCoords();
+        if (isDenied(e) && typed) return typed;
+        throw e;
+      });
       await supabase().rpc("set_location", { lat: c.lat, lng: c.lng });
       const until = untilDate.toISOString();
       const err = await update({ available_until: until });
@@ -121,7 +127,10 @@ export default function HomePage() {
       toast(err ?? `You're available until ${timeOf(until)}.`);
       load();
     } catch (e) {
-      toast((e as Error).message);
+      if (isDenied(e)) {
+        toast("Location is off. Turn it on, or type a town, to go available.");
+        document.getElementById("locfix")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else toast((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -288,13 +297,8 @@ export default function HomePage() {
             </span>
           </div>
         </div>
-        {locErr ? (
-          <div className="notice">
-            <span>{locErr}</span>
-            <button className="btn btn-sm" onClick={locate}>
-              Use my location
-            </button>
-          </div>
+        {locErr && locReason ? (
+          <LocationFix reason={locReason} message={locErr} onRetry={locate} onManual={(pt) => setManual(pt)} />
         ) : (
           <p className="small muted" style={{ margin: 0 }}>
             Yellow circles are players who are free right now, grouped by area. Tap a court to start a game there.

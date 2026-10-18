@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { rpcCompat, without } from "@/lib/rpc";
-import { getCoords, lastCoords, type Coords } from "@/lib/geo";
+import { GeoError, getCoords, lastCoords, type Coords, type GeoReason } from "@/lib/geo";
 import type { Court, Sport } from "@/lib/types";
 import type { PlayerCell } from "@/components/PlayerMap";
 
@@ -11,6 +11,7 @@ export const FALLBACK: Coords = { lat: 40.7128, lng: -74.006 };
 export function useNearby(radius = 15, sport?: Sport) {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [locErr, setLocErr] = useState<string | null>(null);
+  const [locReason, setLocReason] = useState<GeoReason | null>(null);
   const [courts, setCourts] = useState<Court[] | null>(null);
   const [cells, setCells] = useState<PlayerCell[]>([]);
   const [players, setPlayers] = useState<number | null>(null);
@@ -35,11 +36,13 @@ export function useNearby(radius = 15, sport?: Sport) {
     setLocErr(null);
     try {
       const c = await getCoords();
+      setLocReason(null);
       setCoords(c);
       await load(c);
       return c;
     } catch (e) {
       setLocErr((e as Error).message);
+      setLocReason(e instanceof GeoError ? e.reason : "unavailable");
       const c = lastCoords() ?? FALLBACK;
       setCoords((x) => x ?? c);
       await load(c);
@@ -62,5 +65,13 @@ export function useNearby(radius = 15, sport?: Sport) {
   }, [sport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refresh = useCallback(() => coords && load(coords), [coords, load]);
-  return { coords, locErr, courts, cells, players, locate, refresh };
+  /** A town or ZIP typed in while location is blocked. */
+  const setManual = useCallback(
+    (c: Coords) => {
+      setCoords(c);
+      load(c);
+    },
+    [load]
+  );
+  return { coords, locErr, locReason, courts, cells, players, locate, refresh, setManual };
 }
