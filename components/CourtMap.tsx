@@ -43,7 +43,7 @@ export default function CourtMap({ center, courts, me, picking, onMove, onSelect
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    map.current?.setView([center.lat, center.lng], map.current.getZoom());
+    map.current?.setView([center.lat, center.lng], picking ? Math.max(map.current.getZoom(), 17) : map.current.getZoom());
   }, [center.lat, center.lng]);
 
   useEffect(() => {

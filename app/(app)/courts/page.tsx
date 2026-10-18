@@ -8,6 +8,7 @@ import { useToast } from "@/components/Toast";
 import { getCoords, lastCoords, type Coords } from "@/lib/geo";
 import type { Court } from "@/lib/types";
 import { miles } from "@/lib/util";
+import PlaceSearch from "@/components/PlaceSearch";
 
 const CourtMap = dynamic(() => import("@/components/CourtMap"), { ssr: false, loading: () => <div className="map skeleton" /> });
 
@@ -25,6 +26,7 @@ function CourtsInner() {
   const [name, setName] = useState("");
   const [count, setCount] = useState("");
   const [notes, setNotes] = useState("");
+  const [address, setAddress] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -72,6 +74,7 @@ function CourtsInner() {
       lng: pin.lng,
       p_count: count ? Number(count) : null,
       p_notes: notes,
+      p_address: address,
     });
     setBusy(false);
     if (error) return setErr("Couldn't add the court. Check the details and try again.");
@@ -80,6 +83,7 @@ function CourtsInner() {
     setName("");
     setCount("");
     setNotes("");
+    setAddress("");
     load(me ?? pin);
   }
 
@@ -112,13 +116,23 @@ function CourtsInner() {
         <form className="block" onSubmit={save} noValidate>
           <h2>Add a court</h2>
           <p className="small muted" style={{ margin: 0 }}>
-            Drag the map until the pin sits on the courts.
+            Search for the place, then drag the map so the pin sits right on the courts.
           </p>
-          <CourtMap center={center} courts={courts ?? []} me={me} picking tall onMove={setPin} />
-          <label className="field">
+          <div className="field">
             <span>Name</span>
-            <input id="court-name" className="input" maxLength={80} placeholder="Riverside Park courts" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
+            <PlaceSearch
+              value={name}
+              onChange={(v) => { setName(v); setAddress(""); }}
+              near={me ?? center}
+              onPick={(p) => {
+                setAddress(p.address);
+                setCenter({ lat: p.lat, lng: p.lng });
+                setPin({ lat: p.lat, lng: p.lng });
+              }}
+            />
+            {address && <span className="small muted" style={{ fontWeight: 400 }}>{address}</span>}
+          </div>
+          <CourtMap center={center} courts={courts ?? []} me={me} picking tall onMove={setPin} />
           <div className="btn-row">
             <label className="field" style={{ flex: 1 }}>
               <span>Number of courts</span>
