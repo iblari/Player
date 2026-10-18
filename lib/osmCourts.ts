@@ -127,12 +127,12 @@ export function toCourtRows(els: OsmEl[]): CourtRow[] {
     const first = g[0].el;
     return {
       ref: `${first.type[0]}${first.id}`,
-      name: name.slice(0, 80),
+      name: (name.trim().length >= 2 ? name.trim() : label).slice(0, 80),
       town,
       kind: host?.kind ?? (g.some((c) => c.t.leisure === "sports_centre") ? "sports center" : null),
       lat: +lat.toFixed(6),
       lng: +lng.toFixed(6),
-      courts: count,
+      courts: Math.max(1, Math.min(60, count)), // the database allows 1–60
       sports,
       indoor: g.some((c) => c.t.indoor === "yes" || c.t.covered === "yes" || c.t.leisure === "sports_centre"),
       lit: g.some((c) => c.t.lit === "yes"),
