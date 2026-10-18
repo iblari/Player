@@ -53,8 +53,16 @@ function LoginForm() {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
         });
         if (error) throw error;
-        if (data.session) router.replace(next === "/play" ? "/me" : next);
-        else setInfo("Account created. Check your email to confirm it, then sign in.");
+        if (data.session) return router.replace(next === "/play" ? "/me" : next);
+        // No session back: either confirmation is on, or the email is already registered
+        // (Supabase hides that by returning a user with no identities). Try signing in directly.
+        const si = await sb.auth.signInWithPassword({ email: v, password });
+        if (!si.error) return router.replace(next === "/play" ? "/me" : next);
+        if (data.user && (data.user.identities?.length ?? 0) === 0)
+          setErr("That email already has an account with a different password. Sign in instead, or ask the admin to delete the old account.");
+        else if (si.error.message.toLowerCase().includes("not confirmed"))
+          setErr("Your account needs email confirmation, which is still turned on in Supabase. Turn off Confirm email, then try again.");
+        else setErr(friendly(si.error.message));
       } else {
         const { error } = await sb.auth.signInWithPassword({ email: v, password });
         if (error) throw error;
