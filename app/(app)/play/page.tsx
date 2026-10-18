@@ -101,13 +101,14 @@ export default function HomePage() {
   }, [recent, courts]);
 
   const availableCount = cells.reduce((s, c) => s + c.players, 0);
-  // Always lead with the biggest number that is true: free now > players nearby > courts nearby.
+  const otherCount = cells.reduce((s, c) => s + (c.others ?? 0), 0) || Math.max(0, (nearbyPlayers ?? 0) - availableCount);
+  // Lead with the biggest true number: free now > play nearby > courts nearby.
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
   const headline =
     availableCount > 0
-      ? `${plural(availableCount, "player")} free now${nearbyPlayers && nearbyPlayers > availableCount ? ` · ${nearbyPlayers} nearby` : ""}`
-      : nearbyPlayers && nearbyPlayers > 0
-        ? `${plural(nearbyPlayers, "player")} nearby · be the first free`
+      ? `${plural(availableCount, "player")} free now${otherCount ? ` · ${otherCount} more nearby` : ""}`
+      : otherCount > 0
+        ? `${plural(otherCount, "player")} nearby · none free right now`
         : seeding && (courts?.length ?? 0) < 5
           ? "Loading courts near you…"
           : courts?.length
@@ -353,7 +354,7 @@ export default function HomePage() {
           <Link href="/courts">All courts</Link>
         </div>
         <div className="livemap home-map">
-          {coords && <PlayerMap center={coords} me={coords} cells={cells} courts={courts ?? []} onCourt={(id) => router.push(`/host?court=${id}`)} />}
+          {coords && <PlayerMap fit center={coords} me={coords} cells={cells} courts={courts ?? []} onCourt={(id) => router.push(`/host?court=${id}`)} />}
           <div className="livemap-head">
             <span className="chip-live">
               <span className="pulse" aria-hidden="true" />
@@ -361,6 +362,11 @@ export default function HomePage() {
             </span>
           </div>
         </div>
+        <p className="map-key">
+          <span><i className="k-free" /> Free now</span>
+          <span><i className="k-idle" /> Plays nearby, not free</span>
+          <span><i className="k-court" /> Court · tap to play</span>
+        </p>
         {locErr && locReason && <LocationFix reason={locReason} message={locErr} onRetry={locate} onManual={(pt) => setManual(pt)} />}
       </section>
 

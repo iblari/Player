@@ -45,7 +45,12 @@ export function useNearby(radius = 15, sport?: Sport) {
       const args = { ...base, p_sport: sport ?? null };
       const [a, b, n] = await Promise.all([
         rpcCompat("nearby_courts", args, base),
-        rpcCompat("available_players_map", args, base),
+        // Free players and players who play nearby, on a ~1 km grid; older databases: free only.
+        rpcCompat("players_map", args, null).then((r) =>
+          r.error
+            ? rpcCompat("available_players_map", args, base)
+            : { data: ((r.data as { lat: number; lng: number; free: number; others: number }[]) ?? []).map((x) => ({ lat: x.lat, lng: x.lng, players: x.free, others: x.others })), error: null }
+        ),
         rpcCompat("players_nearby", args, base),
       ]);
       setPlayers(typeof n.data === "number" ? n.data : null);

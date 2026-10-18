@@ -882,3 +882,10 @@ a.mf-back { text-decoration: none; }
 .legal a { color: var(--ball); }
 .legal-links { display: flex; gap: 14px; font-size: 12.5px; }
 .legal-links a { color: var(--muted); }
+.player-cell.idle { background: rgba(160,160,160,.28); color: #e5e5e5; border-color: rgba(200,200,200,.5); box-shadow: none; }
+.map-key { margin: 0; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.map-key span { display: inline-flex; align-items: center; gap: 6px; }
+.map-key i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.k-free { background: var(--ball); }
+.k-idle { background: rgba(160,160,160,.6); }
+.k-court { background: #fff; border-radius: 3px !important; }

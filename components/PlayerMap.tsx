@@ -4,7 +4,8 @@ import type maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { addMarker, createMap, div, pinButton } from "@/lib/map";
 
-export type PlayerCell = { lat: number; lng: number; players: number };
+/** players = free right now; others = play nearby but aren't free (grey). */
+export type PlayerCell = { lat: number; lng: number; players: number; others?: number };
 export type CourtDot = { id: string; name: string; lat: number; lng: number; open_games: number };
 
 type Props = {
@@ -15,12 +16,15 @@ type Props = {
   onCourt?: (id: string) => void;
   zoom?: number;
   interactive?: boolean;
+  /** Frame me + players + the nearest courts once data arrives (home map). */
+  fit?: boolean;
 };
 
 const COURT_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M12 5v14"/></svg>';
 
-export default function PlayerMap({ center, me, cells, courts, onCourt, zoom = 13, interactive = true }: Props) {
+export default function PlayerMap({ center, me, cells, courts, onCourt, zoom = 13, interactive = true, fit }: Props) {
+  const fitted = useRef("");
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -46,8 +50,11 @@ export default function PlayerMap({ center, me, cells, courts, onCourt, zoom = 1
     markers.current.forEach((x) => x.remove());
     const out: maplibregl.Marker[] = [];
     cells.forEach((c) => {
-      const size = Math.min(56, 26 + c.players * 6);
-      const d = div("player-cell", String(c.players), `width:${size}px;height:${size}px;pointer-events:none`);
+      const free = c.players > 0;
+      const n = free ? c.players : c.others ?? 0;
+      if (!n) return;
+      const size = Math.min(56, 26 + n * 6);
+      const d = div(`player-cell${free ? "" : " idle"}`, String(n), `width:${size}px;height:${size}px;pointer-events:none`);
       d.setAttribute("aria-hidden", "true");
       out.push(addMarker(m, c, d));
     });
@@ -61,7 +68,19 @@ export default function PlayerMap({ center, me, cells, courts, onCourt, zoom = 1
       out.push(addMarker(m, me, d));
     }
     markers.current = out;
-  }, [cells, courts, me]);
+
+    // Frame you, the players and your nearest courts, so the map isn't a few empty streets.
+    const key = `${cells.length}|${Math.min(courts.length, 6)}`;
+    if (fit && key !== fitted.current && (cells.length || courts.length)) {
+      fitted.current = key;
+      const pts = [...cells.map((c) => [c.lng, c.lat]), ...courts.slice(0, 6).map((c) => [c.lng, c.lat])];
+      if (me) pts.push([me.lng, me.lat]);
+      if (pts.length >= 2) {
+        const lngs = pts.map((p) => p[0]), lats = pts.map((p) => p[1]);
+        m.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: { top: 64, bottom: 28, left: 36, right: 36 }, maxZoom: 14, duration: 600 });
+      }
+    }
+  }, [cells, courts, me]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={el} style={{ position: "absolute", inset: 0 }} />;
 }
