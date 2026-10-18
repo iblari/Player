@@ -585,3 +585,9 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
   .lp-off, .lp-empty, .lp-k1, .lp-k2, .lp-n1 { opacity: 0 !important; }
   .lp-fill { width: 100%; }
 }
+
+/* ---------- Sign in with Google ---------- */
+.btn-google { background: #ffffff; color: #1f1f1f; font-weight: 600; gap: 12px; }
+.btn-google:hover { background: #f2f2f2; }
+.or-divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: var(--s-1); }
+.or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
