@@ -1,57 +1,79 @@
 import Link from "next/link";
-import LandingCourt from "@/components/LandingCourt";
 import AuthHashHandler from "@/components/AuthHashHandler";
+import HeroVideo from "@/components/landing/HeroVideo";
+import NearYouMap from "@/components/landing/NearYouMap";
+import HowItWorks from "@/components/landing/HowItWorks";
 
 export default function Landing() {
   return (
-    <main className="shell bare landing">
-      <div className="wordmark">
-        <i aria-hidden="true" /> Fourth Up
-      </div>
-
+    <main className="lp">
       <AuthHashHandler />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <h1 className="hero-title">Never be the one standing at the fence.</h1>
-        <p className="hero-copy">
-          Tell players near you you&apos;re free, post a game at your court, and watch the spots fill.
-        </p>
-      </div>
-
-      <LandingCourt />
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Link className="btn btn-ball btn-block" href="/login">
-          Get in a game
-        </Link>
-        <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
-          Free. Takes 20 seconds to sign up.
-        </p>
-      </div>
-
-      <ol className="steps">
-        <li>
-          <span className="n">1</span>
-          <div>
-            <b>Go available</b>
-            <span className="muted small">Set how far you&apos;ll drive and for how long. Hosts nearby see you count toward their game.</span>
+      <section className="lp-hero">
+        <HeroVideo />
+        <header className="lp-top">
+          <div className="wordmark">
+            <i aria-hidden="true" /> Fourth Up
           </div>
-        </li>
-        <li>
-          <span className="n">2</span>
-          <div>
-            <b>Post a game</b>
-            <span className="muted small">Pick the court, doubles or singles, and a rating range. Matching players get a ping.</span>
+          <Link className="lp-signin" href="/login">
+            Sign in
+          </Link>
+        </header>
+        <div className="lp-hero-copy">
+          <span className="lp-pill">
+            <span className="lp-live" aria-hidden="true" />
+            Pickleball &amp; tennis near you
+          </span>
+          <h1 className="lp-h1">
+            Match with players near you <span>within minutes.</span>
+          </h1>
+          <p className="lp-lead">Say you&apos;re free, post a game at your court, and watch the spots fill.</p>
+          <div className="lp-cta">
+            <Link className="btn btn-ball btn-block" href="/login">
+              Get in a game
+            </Link>
+            <p className="small muted">Free. Takes 20 seconds to sign up.</p>
           </div>
-        </li>
-        <li>
-          <span className="n">3</span>
-          <div>
-            <b>Show up</b>
-            <span className="muted small">The court fills in live. Hosts log who showed, so reliable players rise.</span>
-          </div>
-        </li>
-      </ol>
+        </div>
+      </section>
+
+      <section className="lp-sec lp-near">
+        <div className="lp-sec-text">
+          <span className="lp-eyebrow">Players near you</span>
+          <h2 className="lp-h2">Like calling a ride. For a game.</h2>
+          <p className="lp-lead">
+            See who&apos;s free around you. Post a game and the closest players at your level get pinged. Watch them head to the court.
+          </p>
+        </div>
+        <NearYouMap />
+      </section>
+
+      <section className="lp-sec lp-how">
+        <div className="lp-sec-text">
+          <span className="lp-eyebrow">How it works</span>
+          <h2 className="lp-h2">From couch to court in three taps.</h2>
+        </div>
+        <HowItWorks />
+        <div className="lp-cta lp-cta-end">
+          <Link className="btn btn-ball btn-block" href="/login">
+            Get in a game
+          </Link>
+        </div>
+      </section>
+
+      <footer className="lp-foot">
+        <div className="wordmark" style={{ fontSize: "1.1rem" }}>
+          <i aria-hidden="true" style={{ width: 16, height: 16 }} /> Fourth Up
+        </div>
+        <span>Pickleball and tennis players near you. More sports soon.</span>
+        <span>
+          Court and map data ©{" "}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+            OpenStreetMap
+          </a>{" "}
+          contributors.
+        </span>
+      </footer>
     </main>
   );
 }
