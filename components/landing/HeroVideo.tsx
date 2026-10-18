@@ -2,36 +2,31 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Two muted, looping stock clips (tennis backhand, aerial pickleball) that crossfade.
- * Clips: Mixkit (free license) and Pexels (free license); no attribution required.
- * The tennis clip stays underneath so there's never a dark gap during the fade.
+ * One seamless 9 s loop (tennis backhand → aerial pickleball → back), with the crossfades
+ * baked into the file so the phone decodes a single video. 720×1280 so it stays sharp on
+ * high-density screens. MP4/H.264 first (hardware-decoded on iPhone), WebM/VP9 as fallback.
+ * Clips: Mixkit and Pexels free licenses; no attribution required.
  */
 export default function HeroVideo() {
-  const a = useRef<HTMLVideoElement>(null);
-  const b = useRef<HTMLVideoElement>(null);
+  const v = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const el = v.current;
+    if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      [a.current, b.current].forEach((v) => v?.pause());
+      el.pause();
       return;
     }
     // React doesn't reliably set the muted attribute, and browsers only autoplay muted video.
-    [a.current, b.current].forEach((v) => {
-      if (!v) return;
-      v.muted = true;
-      v.play().catch(() => {});
-    });
+    el.muted = true;
+    el.play().catch(() => {});
   }, []);
 
   return (
     <div className="lp-hero-media" aria-hidden="true">
-      <video ref={a} className="lp-v1" poster="/landing/hero-tennis.jpg" autoPlay muted loop playsInline preload="auto">
-        <source src="/landing/hero-tennis.webm" type="video/webm" />
-        <source src="/landing/hero-tennis.mp4" type="video/mp4" />
-      </video>
-      <video ref={b} className="lp-v2" poster="/landing/hero-pickleball.jpg" autoPlay muted loop playsInline preload="auto">
-        <source src="/landing/hero-pickleball.webm" type="video/webm" />
-        <source src="/landing/hero-pickleball.mp4" type="video/mp4" />
+      <video ref={v} poster="/landing/hero-loop.jpg" autoPlay muted loop playsInline preload="auto" disablePictureInPicture>
+        <source src="/landing/hero-loop.mp4" type="video/mp4" />
+        <source src="/landing/hero-loop.webm" type="video/webm" />
       </video>
     </div>
   );
