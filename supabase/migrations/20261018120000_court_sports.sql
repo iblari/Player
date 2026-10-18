@@ -1,3 +1,11 @@
+-- Safe to re-run: drop every existing version of the functions this file recreates,
+-- whatever arguments they were created with (a partial earlier run may have left new ones).
+do $$ declare r record; begin
+  for r in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = any(array['add_court', 'nearby_courts', 'recommended_courts', 'recent_courts', 'available_players_map', 'players_nearby'])
+  loop execute 'drop function ' || r.sig; end loop;
+end $$;
+
 -- Courts know which sports they host, and court/player lists filter by the selected sport.
 -- Every existing court is a pickleball venue (the NJ seed is pickleball), so the default is pickleball.
 

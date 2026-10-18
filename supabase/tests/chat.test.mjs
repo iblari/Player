@@ -22,7 +22,8 @@ await db.exec(`
   insert into push_subscriptions values ('e-a','${A}','p','a'),('e-b','${B}','p','a'),('e-c','${C}','p','a');
 `);
 await db.exec(readFileSync(new URL("../migrations/20261018130000_game_chat.sql", import.meta.url), "utf8"));
-ok(true, "chat migration applies");
+await db.exec(readFileSync(new URL("../migrations/20261018130000_game_chat.sql", import.meta.url), "utf8"));
+ok(true, "chat migration applies (twice)");
 await db.exec(`grant usage on schema public, auth to authenticated; grant select, insert on all tables in schema public to authenticated;
   grant usage on all sequences in schema public to authenticated; grant execute on all functions in schema auth to authenticated;`);
 
@@ -56,7 +57,8 @@ ok(r.rows?.length === 0, "only the sender can trigger push for a message");
 // Match notifications
 await db.exec(readFileSync(new URL("../migrations/20261018140000_match_push.sql", import.meta.url), "utf8"));
 await db.exec("grant execute on all functions in schema public to authenticated;");
-ok(true, "match push migration applies");
+await db.exec(readFileSync(new URL("../migrations/20261018140000_match_push.sql", import.meta.url), "utf8"));
+ok(true, "match push migration applies (twice)");
 r = await as(B, `select endpoint from join_push_targets('${G1}')`);
 ok(r.rows?.map((x) => x.endpoint).join() === "e-a", "B just joined: push goes to A only");
 r = await as(C, `select endpoint from join_push_targets('${G1}')`);

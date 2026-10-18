@@ -29,9 +29,12 @@ await db.exec(`
 `);
 await db.exec(readFileSync(MIG, "utf8"));
 ok(true, "migration applies");
+await db.exec(readFileSync(MIG, "utf8"));
+ok(true, "migration re-applies cleanly (safe to run twice)");
 // Court sports migration: SQL bodies need real PostGIS, so skip body checks and test the table + trigger.
 const MIG2 = new URL("../migrations/20261018120000_court_sports.sql", import.meta.url).pathname;
 await db.exec("alter table public.courts add column town text, add column kind text, add column indoor boolean default false, add column lit boolean default false, add column source text default 'user', add column address text, add column court_count int, add column notes text, add column created_by uuid; set check_function_bodies = off;");
+await db.exec(readFileSync(MIG2, "utf8"));
 await db.exec(readFileSync(MIG2, "utf8"));
 await db.exec("set check_function_bodies = on;");
 ok(true, "court sports migration applies");
