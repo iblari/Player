@@ -14,6 +14,7 @@ import { useMyRatings, useSport } from "@/lib/sport";
 import { saveAnswer } from "@/lib/membership";
 import { BackIcon, PinIcon } from "@/components/Icons";
 import { useNearby } from "@/lib/nearby";
+import { clean, durationLabel, money, share, type Handles } from "@/lib/pay";
 import { SPORT_META, type Court } from "@/lib/types";
 import { clampSkill, fillChance, fmtSkill, miles, timeOf, when, YES_RATE_AVAILABLE, YES_RATE_NEARBY } from "@/lib/util";
 
@@ -50,6 +51,12 @@ function HostInner() {
   const [max, setMax] = useState(3.5);
   const [editRange, setEditRange] = useState(false);
   const [note, setNote] = useState("");
+  // Paid court: total cost and how long it's booked for; everyone splits it evenly.
+  const [paid, setPaid] = useState(false);
+  const [feeTotal, setFeeTotal] = useState("");
+  const [feeMinutes, setFeeMinutes] = useState(90);
+  const [handles, setHandles] = useState<Handles>({});
+  const [handlesLoaded, setHandlesLoaded] = useState(false);
   const [supply, setSupply] = useState<{ available: number; nearby: number } | null>(null);
   const [extra, setExtra] = useState<Court | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -62,6 +69,20 @@ function HostInner() {
       .rpc("active_hosted_game")
       .then(({ data }) => setHosting(((data as { id: string; court_name: string; starts_at: string; status: string }[]) ?? [])[0] ?? null));
   }, []);
+
+  // Where I get paid, saved from last time.
+  useEffect(() => {
+    if (!userId) return;
+    supabase()
+      .from("payment_handles")
+      .select("venmo, cashapp, paypal, zelle")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setHandles(data as Handles);
+        setHandlesLoaded(true);
+      });
+  }, [userId]);
 
   // Default the rating range to my level in this sport, ±0.25.
   useEffect(() => {
@@ -110,6 +131,8 @@ function HostInner() {
     setErr(null);
     if (!courtId) return setSheet(true);
     if (!startsAt || isNaN(startsAt.getTime())) return setErr("Pick a start time.");
+    const fee = Number(feeTotal);
+    if (paid && (!feeTotal || !(fee > 0) || fee > 2000)) return setErr("Enter what the court costs, or switch it to Free.");
     if (startsAt.getTime() < Date.now() - 60000) return setErr("That time has passed. Pick a later one.");
     setBusy(true);
     const args = {
@@ -145,6 +168,20 @@ function HostInner() {
     if (error || !data) {
       setBusy(false);
       return setErr(error?.message ?? "Couldn't post the game. Try again.");
+    }
+    if (paid && userId) {
+      // Fee and payment handles are saved alongside the game (older databases just skip this).
+      const sb = supabase();
+      const h = {
+        venmo: handles.venmo ? clean.venmo(handles.venmo) || null : null,
+        cashapp: handles.cashapp ? clean.cashapp(handles.cashapp) || null : null,
+        paypal: handles.paypal ? clean.paypal(handles.paypal) || null : null,
+        zelle: handles.zelle ? clean.zelle(handles.zelle) || null : null,
+      };
+      await Promise.all([
+        sb.from("games").update({ fee_total: fee, fee_minutes: feeMinutes }).eq("id", data),
+        sb.from("payment_handles").upsert({ user_id: userId, ...h, updated_at: new Date().toISOString() }),
+      ]);
     }
     fetch("/api/notify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
     router.replace(`/g/${data}?posted=1`);
@@ -267,6 +304,70 @@ function HostInner() {
           </div>
         )}
         <input id="note" className="input" maxLength={140} placeholder="Note for players: court 3, I have balls" value={note} onChange={(e) => setNote(e.target.value)} />
+      </section>
+
+      <section className="block">
+        <div className="block-head">
+          <h2>Court cost</h2>
+          <div className="seg" role="group" aria-label="Court cost">
+            <button aria-pressed={!paid} onClick={() => setPaid(false)}>
+              Free
+            </button>
+            <button aria-pressed={paid} onClick={() => setPaid(true)}>
+              Paid
+            </button>
+          </div>
+        </div>
+        {paid && (
+          <div className="fee-box">
+            <div className="fee-row">
+              <label className="money-input">
+                <span>$</span>
+                <input inputMode="decimal" placeholder="40" value={feeTotal} onChange={(e) => setFeeTotal(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Total court cost in dollars" />
+              </label>
+              <span className="muted small">total, for</span>
+              <div className="seg seg-sm" role="group" aria-label="Court booked for">
+                {[60, 90, 120].map((m) => (
+                  <button key={m} aria-pressed={feeMinutes === m} onClick={() => setFeeMinutes(m)}>
+                    {durationLabel(m)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {Number(feeTotal) > 0 && (
+              <p className="fee-split">
+                Split {slots} ways: <b>{money(share(Number(feeTotal), slots))} each</b>
+                {slots === 2 ? ` (doubles would be ${money(share(Number(feeTotal), 4))} each)` : ` (singles would be ${money(share(Number(feeTotal), 2))} each)`}
+              </p>
+            )}
+            <span className="opt-label">Players pay you with</span>
+            <div className="handles">
+              {(
+                [
+                  ["venmo", "Venmo", "@username"],
+                  ["cashapp", "Cash App", "$cashtag"],
+                  ["zelle", "Zelle", "phone or email"],
+                  ["paypal", "PayPal", "paypal.me name"],
+                ] as const
+              ).map(([k, label, ph]) => (
+                <label key={k} className="handle">
+                  <span>{label}</span>
+                  <input
+                    className="input"
+                    placeholder={ph}
+                    value={handles[k] ?? ""}
+                    onChange={(e) => setHandles((h) => ({ ...h, [k]: e.target.value }))}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                </label>
+              ))}
+            </div>
+            <span className="small muted">
+              {handlesLoaded && Object.values(handles).some(Boolean) ? "Saved for next time. " : ""}Only players who join your game see these.
+            </span>
+          </div>
+        )}
       </section>
 
       {supply && chosen && (

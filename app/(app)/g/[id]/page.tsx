@@ -14,11 +14,13 @@ import { useUnread } from "@/lib/chat";
 import { isMissing } from "@/lib/rpc";
 import { ChatIcon } from "@/components/Icons";
 import PushPrompt from "@/components/PushPrompt";
+import CourtFee from "@/components/CourtFee";
+import { money, share as feeShare } from "@/lib/pay";
 import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, pastLabel, timeOf, when } from "@/lib/util";
 
-type Row = { player_id: string; no_show: boolean; joined_at: string };
+type Row = { player_id: string; no_show: boolean; joined_at: string; paid_at?: string | null };
 type Rel = { player_id: string; games: number; showed: number };
 
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +44,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     const sb = supabase();
     const [{ data: g }, { data: r }, { data: res }] = await Promise.all([
       sb.from("games").select("*, courts(name, address, notes)").eq("id", id).maybeSingle(),
-      sb.from("game_players").select("player_id, no_show, joined_at").eq("game_id", id).order("joined_at"),
+      sb.from("game_players").select("*").eq("game_id", id).order("joined_at"),
       sb.from("game_results").select("team_a, team_b").eq("game_id", id).maybeSingle(),
     ]);
     setTeams((res as { team_a: string[]; team_b: string[] } | null) ?? null);
@@ -218,6 +220,21 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <b>{st === "open" ? timeOf(game.expires_at) : pastLabel(game.created_at)}</b>
         </div>
       </div>
+      {!!game.fee_total && Number(game.fee_total) > 0 && st !== "cancelled" && (
+        <CourtFee
+          gameId={game.id}
+          total={Number(game.fee_total)}
+          minutes={game.fee_minutes ?? null}
+          slots={game.slots}
+          hostId={game.host_id}
+          hostName={names(game.host_id)}
+          courtName={game.courts.name}
+          inGame={inGame}
+          isHost={isHost}
+          paidAt={rows.find((r) => r.player_id === userId)?.paid_at ?? null}
+          onChange={load}
+        />
+      )}
       {game.note && <p style={{ margin: 0 }}>&ldquo;{game.note}&rdquo; <span className="muted small">from {names(game.host_id)}</span></p>}
 
       {st !== "cancelled" && (
@@ -228,7 +245,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             </Link>
           ) : st === "open" && !inGame ? (
             <button className="btn btn-ball btn-block" onClick={() => join()} disabled={busy}>
-              I&apos;m in
+              I&apos;m in{game.fee_total ? ` · ${money(feeShare(Number(game.fee_total), game.slots))} court share` : ""}
             </button>
           ) : null}
           {chatOn && !chat.missing && (
@@ -272,6 +289,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
                 <div className="grow">
                   <b>{names(pid)}</b>
                   {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
+                  {!!game.fee_total && pid !== game.host_id && (isHost || pid === userId) && (
+                    <span className={`pill${rows.find((x) => x.player_id === pid)?.paid_at ? " pill-ok" : ""}`} style={{ marginLeft: 8 }}>
+                      {rows.find((x) => x.player_id === pid)?.paid_at ? "Paid" : `Owes ${money(feeShare(Number(game.fee_total), game.slots))}`}
+                    </span>
+                  )}
                   <div className="small muted">
                     {[
                       levels[pid]?.level != null

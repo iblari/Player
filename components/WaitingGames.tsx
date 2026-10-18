@@ -8,6 +8,7 @@ import { JOIN_MESSAGES } from "@/lib/games";
 import { waitingGames, type Waiting } from "@/lib/courtSearch";
 import { SPORT_META, type Sport } from "@/lib/types";
 import { fmtSkill, when } from "@/lib/util";
+import { money, share } from "@/lib/pay";
 
 /**
  * Someone already posted a game at this court: offer it first, one tap to join.
@@ -83,6 +84,7 @@ export default function WaitingGames({
               </span>
               <span className="m">
                 Needs {left} · {when(g.starts_at)} · {meta.rating} {fmtSkill(g.skill_min)}–{fmtSkill(g.skill_max)}
+                {g.fee_total ? ` · ${money(share(Number(g.fee_total), g.slots))} court share` : " · free court"}
               </span>
             </span>
             <button className="btn btn-ball btn-sm" onClick={() => join(g)} disabled={!!busy}>

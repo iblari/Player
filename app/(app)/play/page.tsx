@@ -15,7 +15,7 @@ import RecommendedCourts from "@/components/RecommendedCourts";
 import SportSwitch from "@/components/SportSwitch";
 import { useSport } from "@/lib/sport";
 import Avatar from "@/components/Avatar";
-import { ChevronIcon, ClockIcon, PlusIcon, SearchIcon } from "@/components/Icons";
+import { CalendarIcon, ChevronIcon, ClockIcon, PlusIcon, SearchIcon } from "@/components/Icons";
 import { getCoords, isDenied, lastCoords } from "@/lib/geo";
 import LocationFix from "@/components/LocationFix";
 import WhereYouPlay from "@/components/WhereYouPlay";
@@ -186,7 +186,7 @@ export default function HomePage() {
             setSheet("later");
           }}
         >
-          <ClockIcon /> Now <span aria-hidden="true">▾</span>
+          <CalendarIcon /> Later
         </button>
       </div>
 
