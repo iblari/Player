@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LandingCourt from "@/components/LandingCourt";
+import AuthHashHandler from "@/components/AuthHashHandler";
 
 export default function Landing() {
   return (
@@ -7,6 +8,8 @@ export default function Landing() {
       <div className="wordmark">
         <i aria-hidden="true" /> Fourth Up
       </div>
+
+      <AuthHashHandler />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h1 className="hero-title">Never be the one standing at the fence.</h1>

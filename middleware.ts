@@ -7,6 +7,18 @@ import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 
 export async function middleware(request: NextRequest) {
+  // Supabase falls back to the Site URL (often "/") when a redirect URL isn't allow-listed,
+  // so catch a sign-in code on any page and finish sign-in properly.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && request.nextUrl.pathname !== "/auth/callback") {
+    const to = request.nextUrl.clone();
+    to.pathname = "/auth/callback";
+    to.search = "";
+    to.searchParams.set("code", code);
+    to.searchParams.set("next", request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/login" ? "/play" : request.nextUrl.pathname);
+    return NextResponse.redirect(to);
+  }
+
   let response = NextResponse.next({ request });
   const url = SUPABASE_URL;
   const key = SUPABASE_KEY;

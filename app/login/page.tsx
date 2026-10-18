@@ -3,6 +3,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import AuthHashHandler from "@/components/AuthHashHandler";
 
 function LoginForm() {
   const params = useSearchParams();
@@ -32,6 +33,7 @@ function LoginForm() {
       <Link href="/" className="wordmark" style={{ textDecoration: "none" }}>
         <i aria-hidden="true" /> Fourth Up
       </Link>
+      <AuthHashHandler />
       {sent ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <h1>Check your email</h1>
