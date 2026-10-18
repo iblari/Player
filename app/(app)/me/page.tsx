@@ -144,24 +144,23 @@ export default function MePage() {
     router.replace("/");
   }
 
+  const saved = {
+    name: profile ? (profile.display_name.includes("@") ? "" : profile.display_name) : "",
+    sports: JSON.stringify(profile?.sports ?? {}),
+    clubs: JSON.stringify([...(profile?.clubs ?? [])].sort()),
+  };
+  const dirty =
+    !!profile &&
+    (name.trim() !== saved.name || JSON.stringify(sports) !== saved.sports || JSON.stringify([...clubs].sort()) !== saved.clubs);
+  const sportSummary = SPORTS.filter((s) => sports[s.id]).map((s) => `${s.label} ${sports[s.id]}/10`).join(" · ");
+
+
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          aria-label="Change profile photo"
-          style={{ position: "relative", border: 0, padding: 0, background: "none", cursor: "pointer", borderRadius: "50%" }}
-        >
-          {userId && <Avatar id={userId} name={name || "?"} size={84} src={photo} />}
-          <span
-            style={{
-              position: "absolute", right: -2, bottom: -2, width: 30, height: 30, borderRadius: "50%",
-              background: "var(--ink)", color: "#000", display: "grid", placeItems: "center", border: "3px solid var(--paper)",
-            }}
-            aria-hidden="true"
-          >
+      <header className="me-head">
+        <button type="button" className="me-photo" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo">
+          {userId && <Avatar id={userId} name={name || "?"} size={88} src={photo} />}
+          <span className="me-photo-badge" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
               <circle cx="12" cy="13" r="3.5" />
@@ -169,116 +168,146 @@ export default function MePage() {
           </span>
         </button>
         <input ref={fileRef} id="photo" type="file" accept="image/*" hidden onChange={onPhoto} />
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ fontSize: "1.75rem", overflowWrap: "anywhere" }}>{name || "Your profile"}</h1>
-          <p className="sub">{uploading ? "Uploading photo…" : photo ? "Tap your photo to change it" : "Tap the circle to add a photo"}</p>
+        <div className="me-id">
+          <h1>{name || "Your profile"}</h1>
+          <p className="sub">{uploading ? "Uploading photo…" : sportSummary || "Add the sports you play"}</p>
+          {clubs.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {clubs.map((c) => (
+                <span key={c} className="pill pill-ball">{c} member</span>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </header>
 
-      <form className="block" onSubmit={save} noValidate style={{ gap: 20 }}>
-        <label className="field">
-          <span>Name players see</span>
-          <input id="display-name" className="input" maxLength={40} placeholder="Ib L." value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
+      <form id="profile-form" onSubmit={save} noValidate className="me-form">
+        <section className="me-section">
+          <h2 className="me-title">Profile</h2>
+          <label className="field">
+            <span>Name players see</span>
+            <input id="display-name" className="input" maxLength={40} placeholder="Ib L." value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+        </section>
 
-        <div className="field">
-          <span>Sports you play</span>
+        <section className="me-section">
+          <h2 className="me-title">Sports</h2>
           <div className="seg">
             {SPORTS.map((s) => (
               <button key={s.id} type="button" aria-pressed={!!sports[s.id]} onClick={() => toggleSport(s.id)}>
-                {sports[s.id] ? "✓ " : ""}
+                {sports[s.id] ? "✓ " : "+ "}
                 {s.label}
               </button>
             ))}
           </div>
-        </div>
-
-        {SPORTS.filter((s) => sports[s.id]).map((s) => {
-          const lv = sports[s.id]!;
-          return (
-            <div key={s.id} className="tile" style={{ gap: 12 }}>
-              <div className="block-head">
-                <b>{s.label} level</b>
-                <span className="num" style={{ fontSize: "1.5rem" }}>
-                  {lv}
-                  <span className="muted" style={{ fontSize: "1rem" }}>/10</span>
-                </span>
+          {SPORTS.filter((s) => sports[s.id]).map((s) => {
+            const lv = sports[s.id]!;
+            return (
+              <div key={s.id} className="level-card">
+                <div className="level-top">
+                  <b>{s.label}</b>
+                  <span className="level-num">
+                    {lv}
+                    <span>/10</span>
+                  </span>
+                </div>
+                <input
+                  id={`level-${s.id}`}
+                  className="level-range"
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={lv}
+                  style={{ ["--p" as string]: `${((lv - 1) / 9) * 100}%` }}
+                  onChange={(e) => setSports((x) => ({ ...x, [s.id]: Number(e.target.value) }))}
+                  aria-label={`${s.label} level, 1 to 10`}
+                />
+                <div className="level-foot">
+                  <span>{LEVEL_HINTS[s.id][lv - 1]}</span>
+                  {s.id === "pickleball" && <span className="muted">≈ DUPR {fmtSkill(levelToSkill(lv))}</span>}
+                  {s.id === "tennis" && <span className="muted">Games coming soon</span>}
+                </div>
               </div>
-              <input
-                id={`level-${s.id}`}
-                type="range"
-                min={1}
-                max={10}
-                step={1}
-                value={lv}
-                onChange={(e) => setSports((x) => ({ ...x, [s.id]: Number(e.target.value) }))}
-                aria-label={`${s.label} level, 1 to 10`}
-                style={{ width: "100%", accentColor: "#d8f03a" }}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span className="small" style={{ fontWeight: 600 }}>{LEVEL_HINTS[s.id][lv - 1]}</span>
-                {s.id === "pickleball" && <span className="small muted">≈ DUPR {fmtSkill(levelToSkill(lv))}</span>}
-              </div>
-            </div>
-          );
-        })}
-        {sports.tennis && (
-          <p className="small muted" style={{ margin: "-8px 0 0" }}>
-            Tennis games are coming soon. Your level is saved so you&apos;re ready when they launch.
-          </p>
-        )}
+            );
+          })}
+        </section>
 
-        <div className="field">
-          <span>Club memberships</span>
-          <div className="seg">
+        <section className="me-section">
+          <h2 className="me-title">Clubs</h2>
+          <div className="list">
             {KNOWN_CLUBS.map((c) => {
               const on = clubs.includes(c);
               return (
-                <button key={c} type="button" aria-pressed={on} onClick={() => setClubs((xs) => (on ? xs.filter((x) => x !== c) : [...xs, c]))}>
-                  {on ? "✓ " : ""}I&apos;m a {c} member
-                </button>
+                <div key={c} className="list-row" style={{ cursor: "default" }}>
+                  <span className="grow">
+                    <span className="t">{c} member</span>
+                    <span className="m" style={{ whiteSpace: "normal" }}>See and join {c} games. Guests can&apos;t play.</span>
+                  </span>
+                  <button
+                    type="button"
+                    className={`toggle${on ? " on" : ""}`}
+                    role="switch"
+                    aria-checked={on}
+                    aria-label={`${c} member`}
+                    onClick={() => setClubs((xs) => (on ? xs.filter((x) => x !== c) : [...xs, c]))}
+                  />
+                </div>
               );
             })}
           </div>
-          <span className="small muted" style={{ fontWeight: 400 }}>
-            Members-only courts like Life Time only show their games to confirmed members, so nobody gets turned away at the door.
-          </span>
-        </div>
-
+        </section>
         {err && <p className="err">{err}</p>}
-        <button className="btn btn-primary" disabled={saving}>
-          {saving ? "Saving…" : "Save profile"}
-        </button>
       </form>
 
-      <section className="block">
-        <h2>Notifications</h2>
-        {push === "on" ? (
-          <div className="btn-row">
-            <span className="pill pill-ok" style={{ alignSelf: "center", flex: "none" }}>
-              <span className="dot" /> On
+      <section className="me-section">
+        <h2 className="me-title">Notifications</h2>
+        <div className="list">
+          <div className="list-row" style={{ cursor: "default", alignItems: "flex-start" }}>
+            <span className="grow">
+              <span className="t">Game pings</span>
+              <span className="m" style={{ whiteSpace: "normal" }}>
+                {push === "ios-install"
+                  ? "On iPhone, add Fourth Up to your Home Screen first (Share → Add to Home Screen), then open it from there."
+                  : push === "blocked"
+                    ? "Blocked for this site. Allow notifications in your browser settings."
+                    : push === "unsupported"
+                      ? "This browser can't receive notifications. Try Chrome, or Safari from your Home Screen."
+                      : "Get pinged when a game near you needs your level, only while you're available."}
+              </span>
             </span>
-            <button className="btn btn-sm" onClick={disablePush}>Turn off</button>
+            {(push === "on" || push === "off") && (
+              <button
+                type="button"
+                className={`toggle${push === "on" ? " on" : ""}`}
+                role="switch"
+                aria-checked={push === "on"}
+                aria-label="Game pings"
+                onClick={() => (push === "on" ? disablePush() : enablePush())}
+              />
+            )}
           </div>
-        ) : push === "off" ? (
-          <>
-            <p className="small muted" style={{ margin: 0 }}>
-              Get pinged when someone near you posts a game at your level, only while you&apos;re available.
-            </p>
-            <button className="btn btn-ball" onClick={enablePush}>Turn on notifications</button>
-          </>
-        ) : push === "ios-install" ? (
-          <p className="small muted" style={{ margin: 0 }}>
-            On iPhone, add Fourth Up to your home screen first: tap Share, then Add to Home Screen. Open it from there to turn on notifications.
-          </p>
-        ) : push === "blocked" ? (
-          <p className="small muted" style={{ margin: 0 }}>Notifications are blocked for this site. Allow them in your browser settings, then come back.</p>
-        ) : (
-          <p className="small muted" style={{ margin: 0 }}>This browser doesn&apos;t support notifications. Try Chrome, or Safari from your home screen.</p>
-        )}
+        </div>
       </section>
 
-      <button className="btn btn-ghost" onClick={signOut}>Sign out</button>
+      <section className="me-section">
+        <div className="list">
+          <button type="button" className="list-row" onClick={signOut}>
+            <span className="grow">
+              <span className="t" style={{ color: "var(--bad)" }}>Sign out</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      {dirty && (
+        <div className="savebar" role="region" aria-label="Unsaved changes">
+          <span>Unsaved changes</span>
+          <button className="btn btn-primary btn-sm" type="submit" form="profile-form" disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      )}
     </>
   );
 }
