@@ -8,6 +8,7 @@ export type Profile = {
   avatar_url: string | null;
   clubs: string[];
   sports: Partial<Record<Sport, number>>;
+  activity_visibility?: "everyone" | "followers" | "private";
 };
 
 export type Sport = "pickleball" | "tennis";

@@ -149,5 +149,29 @@ ok(!!g4ended, "finalizing marks the game ended");
 await set(P[1]);
 await expectErr(`select end_game($1)`, [g4], "not_in_game");
 
+// --- Social: follows, profile card, activities with privacy
+await db.exec("alter table profiles add column if not exists avatar_url text; alter table games add column if not exists fee_minutes int;");
+const MIG4 = new URL("../migrations/20261018180000_social.sql", import.meta.url).pathname;
+await db.exec(readFileSync(MIG4, "utf8"));
+await db.exec(readFileSync(MIG4, "utf8"));
+ok(true, "social migration applies (twice)");
+await set(P[3]);
+let acts = (await db.query(`select * from player_activities($1)`, [P[3]])).rows;
+ok(acts.length >= 2 && acts.every((a) => a.players.length >= 2), `own activities listed with players: ${acts.length}`);
+const a4 = acts.find((a) => a.game_id === g4);
+ok(a4 && a4.won === true && a4.score_a === 11 && a4.level_after !== null, "activity has result, win and rating move");
+await set(P[1]);
+ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length >= 2, "everyone: others see activities");
+await db.query(`update profiles set activity_visibility = 'followers' where id = $1`, [P[3]]);
+ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length === 0, "followers-only hides from non-followers");
+await db.query(`insert into follows (follower_id, followee_id) values ($1, $2)`, [P[1], P[3]]);
+ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length >= 2, "followers-only shows to followers");
+let card = (await db.query(`select profile_card($1) as c`, [P[3]])).rows[0].c;
+ok(card.followers === 1 && card.am_following === true && card.visibility === null && card.games >= 2, `profile card: ${JSON.stringify({ f: card.followers, g: card.games })}`);
+await db.query(`update profiles set activity_visibility = 'private' where id = $1`, [P[3]]);
+ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length === 0, "only me hides from followers too");
+await set(P[3]);
+ok((await db.query(`select * from player_activities($1)`, [P[3]])).rows.length >= 2, "you always see your own");
+
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");
 process.exit(fails ? 1 : 0);

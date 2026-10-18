@@ -794,3 +794,52 @@ button.court-pin { border: 0; padding: 0; cursor: pointer; }
 .mf-stats { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
 .mf-stats b { color: var(--ink); }
 .court-pin.sel { outline: 3px solid var(--ball); outline-offset: 2px; transform: scale(1.15); }
+
+/* ---------- Profile (Strava-style) ---------- */
+.prof { display: flex; flex-direction: column; gap: 14px; }
+.prof-bar { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.prof-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); color: var(--ink); display: grid; place-items: center; }
+.prof-head { display: flex; align-items: center; gap: 16px; }
+.prof-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.prof-id h1 { font-size: 2rem; overflow-wrap: anywhere; }
+.prof-clubs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.prof-follow { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 15px; }
+.prof-follow button { background: none; border: 0; padding: 0; color: var(--ink); font: inherit; cursor: pointer; }
+.prof-follow button b { font-weight: 800; }
+.prof-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); margin-top: 4px; }
+.prof-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 0; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
+.prof-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ball); }
+.prof-acts, .prof-prog { display: flex; flex-direction: column; gap: 12px; }
+.prof-vis { font-size: 13px; color: var(--muted); text-decoration: none; }
+.prof-vis b { color: var(--ink); }
+.act { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: var(--surface); }
+.act-head { display: flex; align-items: center; gap: 10px; }
+.act-head .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.act-head small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-sport { flex: none; font-size: 11.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.act-tennis { color: #9fd3ff; }
+.act-pickleball { color: var(--ball); }
+.act-title { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; text-transform: uppercase; color: var(--ink); text-decoration: none; line-height: 1; }
+.act-with { margin: -4px 0 0; color: var(--muted); font-size: 14px; }
+.act-with a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.act-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.act-stats div { display: flex; flex-direction: column; gap: 2px; }
+.act-stats span { font-size: 12px; color: var(--muted); }
+.act-stats b { font-size: 1.25rem; font-weight: 800; display: flex; align-items: baseline; gap: 6px; }
+.act-stats b.win { color: var(--ball); }
+.act-stats em { font-style: normal; font-size: 12px; font-weight: 800; }
+.up { color: var(--ok); }
+.down { color: var(--bad); }
+.act-court { display: block; }
+.prog { padding: 14px; border-radius: 18px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.prog-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.prog-top > span:first-child { display: flex; flex-direction: column; }
+.prog-top small { color: var(--muted); font-size: 12.5px; }
+.prog-num { font-family: var(--f-display); font-weight: 800; font-size: 2.2rem; color: var(--ball); display: flex; align-items: baseline; gap: 6px; line-height: 1; }
+.prog-num small { font-family: var(--f-body); font-size: 12px; color: var(--muted); font-weight: 700; }
+.prog-chart { display: flex; align-items: center; gap: 12px; }
+.prog-chart small { font-size: 12.5px; font-weight: 700; }
+.edit-top { display: flex; align-items: center; gap: 10px; }
+.edit-top b { font-size: 1.05rem; }
+a.mf-back { text-decoration: none; }
+.roster-name { font-weight: 700; color: var(--ink); text-decoration: none; }

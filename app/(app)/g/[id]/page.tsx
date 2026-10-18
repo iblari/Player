@@ -287,7 +287,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               <div className="roster-row" key={pid}>
                 <Avatar id={pid} name={names(pid)} src={players[pid]?.avatar_url} />
                 <div className="grow">
-                  <b>{names(pid)}</b>
+                  <Link href={pid === userId ? "/me" : `/p/${pid}`} className="roster-name">
+                    {names(pid)}
+                  </Link>
                   {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
                   {!!game.fee_total && pid !== game.host_id && (isHost || pid === userId) && (
                     <span className={`pill${rows.find((x) => x.player_id === pid)?.paid_at ? " pill-ok" : ""}`} style={{ marginLeft: 8 }}>
