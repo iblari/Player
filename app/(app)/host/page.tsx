@@ -251,7 +251,7 @@ function HostInner() {
           onAnswer={async (a) => {
             setAsk(false);
             await saveAnswer(court.club, a);
-            submit(true);
+            submit(!court.club);
           }}
         />
       )}

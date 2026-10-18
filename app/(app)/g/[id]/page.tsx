@@ -156,7 +156,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       {game.members_only && (
         <div className="notice">
           <b>{game.club ?? "Members"} only</b>
-          <span className="muted">Players confirm they&apos;re {game.club ? `${game.club} members` : "members"} or a member&apos;s guest before joining. Bring your membership card.</span>
+          <span className="muted">{game.club ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.` : "Private court. Players confirm they're members or a member's guest before joining."}</span>
         </div>
       )}
       <CourtDiagram slots={game.slots} players={ids.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
@@ -304,7 +304,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           onAnswer={async (a) => {
             setAsk(false);
             await saveAnswer(game.club, a);
-            join(true);
+            join(!game.club);
           }}
         />
       )}

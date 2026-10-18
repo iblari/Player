@@ -33,17 +33,21 @@ export default function MembershipPrompt({
           Are you a {club ?? "member here"}{club ? " member" : ""}?
         </h2>
         <p className="muted" style={{ margin: 0 }}>
-          {courtName} only lets in {club ? `${club} members` : "members"} and their guests. Confirm you can get in before you {action === "join" ? "take a spot" : "post a game"}, so nobody gets turned away at the door.
+          {club
+            ? `${club} pickleball courts are for members only. Guests can't play, so confirm your membership before you ${action === "join" ? "take a spot" : "post a game"}.`
+            : `${courtName} is a private court for members or residents and their guests. Confirm you can get in before you ${action === "join" ? "take a spot" : "post a game"}.`}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
           <button className="btn btn-primary btn-block" onClick={() => onAnswer("member")}>
             Yes, I&apos;m a {club ? `${club} ` : ""}member
           </button>
-          <button className="btn btn-block" onClick={() => onAnswer("guest")}>
-            I&apos;m going as a member&apos;s guest
-          </button>
+          {!club && (
+            <button className="btn btn-block" onClick={() => onAnswer("guest")}>
+              I&apos;m going as a member&apos;s guest
+            </button>
+          )}
           <Link className="btn btn-ghost btn-block" href="/courts" onClick={onClose}>
-            No, show me public courts
+            No, I&apos;m not a member · show public courts
           </Link>
         </div>
         {club && (

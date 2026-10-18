@@ -315,7 +315,7 @@ export default function HomePage() {
             setAsk(null);
             await saveAnswer(g.club, a);
             if (a === "member") await refresh();
-            join(g.id, true);
+            join(g.id, !g.club);
           }}
         />
       )}
