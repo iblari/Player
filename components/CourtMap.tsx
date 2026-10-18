@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { Court } from "@/lib/types";
+import { addMarker, createMap, div, pinButton } from "@/lib/map";
 
 type Props = {
   center: { lat: number; lng: number };
@@ -16,25 +17,22 @@ type Props = {
 
 export default function CourtMap({ center, courts, me, picking, onMove, onSelect, tall }: Props) {
   const el = useRef<HTMLDivElement>(null);
-  const map = useRef<L.Map | null>(null);
-  const layer = useRef<L.LayerGroup | null>(null);
+  const map = useRef<maplibregl.Map | null>(null);
+  const markers = useRef<maplibregl.Marker[]>([]);
   const moveCb = useRef(onMove);
   moveCb.current = onMove;
+  const selectCb = useRef(onSelect);
+  selectCb.current = onSelect;
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = L.map(el.current, { zoomControl: false, attributionControl: true }).setView([center.lat, center.lng], 13);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      className: "tiles-dark",
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(m);
-    L.control.zoom({ position: "bottomright" }).addTo(m);
+    const m = createMap(el.current, { center, zoom: 13 });
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    m.scrollZoom.enable();
     m.on("moveend", () => {
       const c = m.getCenter();
       moveCb.current?.({ lat: c.lat, lng: c.lng });
     });
-    layer.current = L.layerGroup().addTo(m);
     map.current = m;
     return () => {
       m.remove();
@@ -43,35 +41,28 @@ export default function CourtMap({ center, courts, me, picking, onMove, onSelect
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    map.current?.setView([center.lat, center.lng], picking ? Math.max(map.current.getZoom(), 17) : map.current.getZoom());
-  }, [center.lat, center.lng]);
+    const m = map.current;
+    if (!m) return;
+    m.easeTo({ center: [center.lng, center.lat], zoom: picking ? Math.max(m.getZoom(), 16) : m.getZoom() });
+  }, [center.lat, center.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const g = layer.current;
-    if (!g) return;
-    g.clearLayers();
+    const m = map.current;
+    if (!m) return;
+    markers.current.forEach((x) => x.remove());
+    const out: maplibregl.Marker[] = [];
     if (me) {
-      L.marker([me.lat, me.lng], {
-        icon: L.divIcon({ className: "", html: '<div class="me-pin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }),
-        interactive: false,
-      }).addTo(g);
+      const d = div("me-pin", "", "pointer-events:none");
+      d.setAttribute("aria-hidden", "true");
+      out.push(addMarker(m, me, d));
     }
     courts.forEach((c) => {
       const hot = c.open_games > 0 || c.available_players > 0;
-      const label = c.open_games > 0 ? String(c.open_games) : "";
-      const mk = L.marker([c.lat, c.lng], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div class="court-pin${hot ? " hot" : ""}">${label}</div>`,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-        }),
-        title: c.name,
-        keyboard: true,
-      }).addTo(g);
-      mk.on("click", () => onSelect?.(c.id));
+      const b = pinButton(`court-pin${hot ? " hot" : ""}`, c.open_games > 0 ? String(c.open_games) : "", c.name, () => selectCb.current?.(c.id));
+      out.push(addMarker(m, c, b));
     });
-  }, [courts, me, onSelect]);
+    markers.current = out;
+  }, [courts, me]);
 
   return (
     <div className={`map${tall ? " tall" : ""}`}>

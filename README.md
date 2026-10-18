@@ -2,7 +2,7 @@
 
 Find pickleball and tennis players near you, at your level. Go available, post a game at your court, and watch it fill live.
 
-**Stack:** Next.js 15 (App Router) · Supabase (Postgres + PostGIS, Auth, Realtime) · Web Push · Leaflet/OpenStreetMap · Vercel
+**Stack:** Next.js 15 (App Router) · Supabase (Postgres + PostGIS, Auth, Realtime) · Web Push · MapLibre + OpenFreeMap (OpenStreetMap data, free, no API key) · Vercel
 
 ## How it works
 

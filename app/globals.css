@@ -194,11 +194,15 @@ section.block { display: flex; flex-direction: column; gap: 12px; }
 .court-pin svg { width: 16px; height: 16px; }
 .court-pin.hot { background: var(--ball); color: var(--ball-ink); }
 .me-pin { width: 16px; height: 16px; border-radius: 50%; background: #3d8bff; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(61,139,255,.25); }
-.leaflet-container { background: #191a1a !important; font-family: var(--f-body); }
-.tiles-dark { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.92) saturate(0.35); }
-.leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 10px !important; }
-.leaflet-control-attribution a { color: #aaa !important; }
-.leaflet-control-zoom a { background: var(--surface) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+.maplibregl-map { background: #191a1a; font-family: var(--f-body); }
+.maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(0,0,0,0.7) !important; color: #999; font-size: 10px; }
+.maplibregl-ctrl-attrib a { color: #bbb !important; }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
+.maplibregl-ctrl-group { background: var(--surface) !important; border: 1px solid var(--line); box-shadow: none !important; }
+.maplibregl-ctrl-group button { width: 40px !important; height: 40px !important; }
+.maplibregl-ctrl-group button + button { border-top-color: var(--line) !important; }
+.maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(1); }
+button.court-pin { border: 0; padding: 0; cursor: pointer; }
 
 /* ---------- Horizontal game cards ---------- */
 .hscroll { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
