@@ -11,11 +11,20 @@ const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 // Preview deployments (VERCEL_ENV=preview) keep their own URLs for testing.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || "www.playersclub.io";
 
+const FORWARD_OLD_DOMAIN = false;
+
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   // Production answers on one address only: the old domain (letslarp.io), www, and Vercel's
   // own *.vercel.app aliases all forward here, keeping the path and query.
-  if (process.env.VERCEL_ENV === "production" && host && host !== CANONICAL_HOST && host !== CANONICAL_HOST.replace(/^www\./, "") && !host.startsWith("localhost")) {
+  // While playersclub.io's DNS is still spreading, old letslarp.io links keep working in place
+  // (FORWARD_OLD_DOMAIN=1 or the flag below turns forwarding back on). Vercel aliases always forward.
+  const forwardOld = process.env.FORWARD_OLD_DOMAIN === "1" || FORWARD_OLD_DOMAIN;
+  const isOld = host.endsWith("letslarp.io");
+  if (
+    process.env.VERCEL_ENV === "production" && host && host !== CANONICAL_HOST && host !== CANONICAL_HOST.replace(/^www\./, "") &&
+    !host.startsWith("localhost") && (!isOld || forwardOld)
+  ) {
     const to = request.nextUrl.clone();
     to.protocol = "https:";
     to.host = CANONICAL_HOST;
