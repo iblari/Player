@@ -11,7 +11,7 @@ const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 // Preview deployments (VERCEL_ENV=preview) keep their own URLs for testing.
 const CANONICAL_HOST = process.env.CANONICAL_HOST || "www.playersclub.io";
 
-const FORWARD_OLD_DOMAIN = false;
+const FORWARD_OLD_DOMAIN = true;
 
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
