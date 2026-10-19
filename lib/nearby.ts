@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { track } from "@/lib/track";
 import { rpcCompat, without } from "@/lib/rpc";
 import { supabase } from "@/lib/supabase/client";
@@ -38,9 +38,17 @@ export function useNearby(radius = 15, sport?: Sport) {
   // First visit, location not asked yet: show "Where do you play?" instead of a cold browser prompt.
   const [ask, setAsk] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const coordsRef = useRef<Coords | null>(null);
+  useEffect(() => {
+    coordsRef.current = coords;
+  }, [coords]);
 
+  // Only the newest request may update the screen. Without this, a slower response for an
+  // older spot (or the other sport) can land last and show courts somewhere else.
+  const req = useRef(0);
   const load = useCallback(
     async (c: Coords) => {
+      const id = ++req.current;
       const base = { lat: c.lat, lng: c.lng, radius_mi: radius };
       const args = { ...base, p_sport: sport ?? null };
       const [a, b, n] = await Promise.all([
@@ -53,6 +61,7 @@ export function useNearby(radius = 15, sport?: Sport) {
         ),
         rpcCompat("players_nearby", args, base),
       ]);
+      if (id !== req.current) return;
       setPlayers(typeof n.data === "number" ? n.data : null);
       setCourts((a.data as Court[]) ?? []);
       setCells((b.data as PlayerCell[]) ?? []);
@@ -89,7 +98,8 @@ export function useNearby(radius = 15, sport?: Sport) {
     } catch (e) {
       setLocErr((e as Error).message);
       setLocReason(e instanceof GeoError ? e.reason : "unavailable");
-      const c = lastCoords() ?? FALLBACK;
+      // Keep showing wherever we already are; only fall back to the default with nothing else.
+      const c = coordsRef.current ?? lastCoords() ?? FALLBACK;
       setCoords((x) => x ?? c);
       await load(c);
       return null;

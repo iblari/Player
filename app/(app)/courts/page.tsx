@@ -51,16 +51,24 @@ function CourtsInner() {
   }, []);
   const drag = useRef<number | null>(null);
 
+  // Where the list is measured from, and a counter so only the newest request can update it.
+  // Without the counter, a slow response for an older spot or sport could land last.
+  const origin = useRef<Coords | null>(null);
+  const req = useRef(0);
   const load = useCallback(async (c: Coords) => {
+    origin.current = c;
+    const id = ++req.current;
     const base = { lat: c.lat, lng: c.lng, radius_mi: 30 };
     const { data } = await rpcCompat("nearby_courts", { ...base, p_sport: sport }, base);
+    if (id !== req.current) return;
     setCourts((data as Court[]) ?? []);
   }, [sport]);
 
   // New courts default to the sport being browsed.
   useEffect(() => setSports([sport]), [sport]);
+  // Reload for a new sport, but never before we know where to look.
   useEffect(() => {
-    load(me ?? center);
+    if (origin.current) load(origin.current);
   }, [sport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const locate = useCallback(async () => {
@@ -77,9 +85,10 @@ function CourtsInner() {
     } catch (e) {
       setLocErr((e as Error).message);
       setLocReason(e instanceof GeoError ? e.reason : "unavailable");
-      load(center);
+      // GPS failed: keep the last known spot; New York only if we have nothing at all.
+      if (!origin.current) load(lastCoords() ?? FALLBACK);
     }
-  }, [load, center]);
+  }, [load]);
 
   useEffect(() => {
     const c = lastCoords();
