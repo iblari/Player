@@ -18,13 +18,7 @@ export async function POST(request: Request) {
   // The Supabase integration may add a prefix to its variable names (e.g. STORAGE_…).
   const envName = Object.keys(process.env).find((k) => /SUPABASE_(SERVICE_ROLE_KEY|SECRET_KEY)$/.test(k) && process.env[k]);
   const key = envName ? process.env[envName] : undefined;
-  if (!key)
-    return NextResponse.json({
-      added: 0,
-      reason: "no_service_key",
-      // Names only (never values), to see what the integration provided.
-      seen: Object.keys(process.env).filter((k) => /SUPABASE|POSTGRES/.test(k)).sort(),
-    });
+  if (!key) return NextResponse.json({ added: 0, reason: "no_service_key" });
 
   const { lat, lng } = (await request.json().catch(() => ({}))) as { lat?: number; lng?: number };
   if (typeof lat !== "number" || typeof lng !== "number" || Math.abs(lat) > 85 || Math.abs(lng) > 180)
