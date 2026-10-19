@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   ]);
   if (!game || !targets?.length) return NextResponse.json({ sent: 0 });
 
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@letslarp.io", pub, priv);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@playersclub.io", pub, priv);
   const who = me?.display_name || "A player";
   const court = (game.courts as { name: string } | null)?.name ?? "the court";
   const n = count ?? 0;

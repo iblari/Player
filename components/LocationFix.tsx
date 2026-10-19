@@ -30,7 +30,7 @@ const STEPS: Record<Platform, { label: string; steps: string[]; also?: string[] 
       "Tap Safari Websites → While Using the App, and turn on Precise Location.",
       "Swipe this app closed, then open it again.",
     ],
-    also: ["Still blocked? Open www.letslarp.io in Safari, allow location there, then reopen the app."],
+    also: ["Still blocked? Open playersclub.io in Safari, allow location there, then reopen the app."],
   },
   "ios-chrome": {
     label: "iPhone · Chrome",

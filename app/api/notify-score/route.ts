@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     sb.from("games").select("courts(name)").eq("id", gameId).maybeSingle(),
   ]);
   if (!targets?.length || !rep) return NextResponse.json({ sent: 0 });
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@letslarp.io", VAPID_PUBLIC_KEY, priv);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@playersclub.io", VAPID_PUBLIC_KEY, priv);
   const who = me?.display_name || "A player";
   const court = (game?.courts as unknown as { name: string } | null)?.name ?? "your game";
   const payload = JSON.stringify({

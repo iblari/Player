@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     try {
       const r = await fetch(url, {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "letslarp.io court finder (hello@letslarp.io)" },
+        headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "playersclub.io court finder (hello@playersclub.io)" },
         body: "data=" + encodeURIComponent(q),
         signal: AbortSignal.timeout(90000),
       });

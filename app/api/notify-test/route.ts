@@ -14,7 +14,7 @@ export async function POST() {
   if (!auth.user) return NextResponse.json({ error: "Sign in first" }, { status: 401 });
   const { data: subs } = await sb.from("push_subscriptions").select("endpoint, p256dh, auth").eq("user_id", auth.user.id);
   if (!subs?.length) return NextResponse.json({ sent: 0, reason: "no_devices" });
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@letslarp.io", VAPID_PUBLIC_KEY, priv);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hello@playersclub.io", VAPID_PUBLIC_KEY, priv);
   const payload = JSON.stringify({ title: "Notifications are on", body: "You'll hear when someone joins your game and when it's game on.", url: "/play", tag: "test" });
   const results = await Promise.allSettled(
     subs.map((s) =>

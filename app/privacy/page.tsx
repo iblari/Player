@@ -11,7 +11,7 @@ export default function Privacy() {
       <Link href="/" className="small muted">← Back</Link>
       <h1>Privacy</h1>
       <p className="muted small">Last updated {UPDATED}</p>
-      <p>Let&apos;s Rally (letslarp.io) helps you find people to play pickleball and tennis with. This page explains what we collect, why, and what you control.</p>
+      <p>Let&apos;s Rally (playersclub.io) helps you find people to play pickleball and tennis with. This page explains what we collect, why, and what you control.</p>
 
       <h2>What we collect</h2>
       <ul>

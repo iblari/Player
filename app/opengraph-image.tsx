@@ -20,7 +20,7 @@ export default function OG() {
         <div style={{ display: "flex", gap: 14, fontSize: 30, color: "#a3a3a3" }}>
           <span style={{ background: "#d8f03a", color: "#142000", padding: "8px 20px", borderRadius: 999, fontWeight: 800 }}>Pickleball</span>
           <span style={{ background: "#262626", color: "#fff", padding: "8px 20px", borderRadius: 999, fontWeight: 800 }}>Tennis</span>
-          <span style={{ padding: "8px 4px" }}>Free · letslarp.io</span>
+          <span style={{ padding: "8px 4px" }}>Free · playersclub.io</span>
         </div>
       </div>
     ),

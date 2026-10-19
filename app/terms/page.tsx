@@ -11,7 +11,7 @@ export default function Terms() {
       <Link href="/" className="small muted">← Back</Link>
       <h1>Terms</h1>
       <p className="muted small">Last updated {UPDATED}</p>
-      <p>By using Let&apos;s Rally (letslarp.io) you agree to these terms.</p>
+      <p>By using Let&apos;s Rally (playersclub.io) you agree to these terms.</p>
 
       <h2>Using the app</h2>
       <ul>
