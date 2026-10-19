@@ -9,13 +9,13 @@ const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
 // The one address production should be seen on. Vercel also serves production on its own
 // *.vercel.app aliases; send those here so sign-ins, cookies and shared links stay on one domain.
 // Preview deployments (VERCEL_ENV=preview) keep their own URLs for testing.
-const CANONICAL_HOST = process.env.CANONICAL_HOST || "playersclub.io";
+const CANONICAL_HOST = process.env.CANONICAL_HOST || "www.playersclub.io";
 
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   // Production answers on one address only: the old domain (letslarp.io), www, and Vercel's
   // own *.vercel.app aliases all forward here, keeping the path and query.
-  if (process.env.VERCEL_ENV === "production" && host && host !== CANONICAL_HOST && host !== `www.${CANONICAL_HOST}` && !host.startsWith("localhost")) {
+  if (process.env.VERCEL_ENV === "production" && host && host !== CANONICAL_HOST && host !== CANONICAL_HOST.replace(/^www\./, "") && !host.startsWith("localhost")) {
     const to = request.nextUrl.clone();
     to.protocol = "https:";
     to.host = CANONICAL_HOST;

@@ -12,10 +12,10 @@ const barlowCondensed = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "
 const DESC = "Match with pickleball and tennis players near you within minutes. Pick a court, post a game, and watch it fill. Free.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://playersclub.io"),
+  metadataBase: new URL("https://www.playersclub.io"),
   title: "Let's Rally · Find pickleball & tennis players near you",
   description: DESC,
-  openGraph: { title: "Let's Rally", description: DESC, url: "https://playersclub.io", siteName: "Let's Rally", type: "website" },
+  openGraph: { title: "Let's Rally", description: DESC, url: "https://www.playersclub.io", siteName: "Let's Rally", type: "website" },
   twitter: { card: "summary_large_image", title: "Let's Rally", description: DESC },
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Let's Rally", statusBarStyle: "black-translucent" },
