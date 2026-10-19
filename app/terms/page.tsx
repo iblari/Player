@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Terms · Let's Rally" };
+export const metadata: Metadata = { title: "Terms · Players Club" };
 const CONTACT = "ibrahimlari7@gmail.com";
 const UPDATED = "October 18, 2026";
 
@@ -11,7 +11,7 @@ export default function Terms() {
       <Link href="/" className="small muted">← Back</Link>
       <h1>Terms</h1>
       <p className="muted small">Last updated {UPDATED}</p>
-      <p>By using Let&apos;s Rally (playersclub.io) you agree to these terms.</p>
+      <p>By using Players Club (playersclub.io) you agree to these terms.</p>
 
       <h2>Using the app</h2>
       <ul>
@@ -21,7 +21,7 @@ export default function Terms() {
       </ul>
 
       <h2>Meeting people and playing</h2>
-      <p>Let&apos;s Rally helps you find other players; we don&apos;t run the games, the courts, or vet players. Meet in public places, use your judgment, and play within your ability. Sports carry a risk of injury. You play at your own risk, and you&apos;re responsible for following the rules of any court or club, including membership rules.</p>
+      <p>Players Club helps you find other players; we don&apos;t run the games, the courts, or vet players. Meet in public places, use your judgment, and play within your ability. Sports carry a risk of injury. You play at your own risk, and you&apos;re responsible for following the rules of any court or club, including membership rules.</p>
 
       <h2>Court costs and payments</h2>
       <p>Hosts may share court costs and payment handles. Payments happen directly between players in third-party apps (Venmo, Cash App, PayPal, Zelle). We don&apos;t process, hold, or guarantee payments and can&apos;t resolve payment disputes.</p>

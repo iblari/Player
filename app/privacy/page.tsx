@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Privacy · Let's Rally" };
+export const metadata: Metadata = { title: "Privacy · Players Club" };
 const CONTACT = "ibrahimlari7@gmail.com";
 const UPDATED = "October 18, 2026";
 
@@ -11,7 +11,7 @@ export default function Privacy() {
       <Link href="/" className="small muted">← Back</Link>
       <h1>Privacy</h1>
       <p className="muted small">Last updated {UPDATED}</p>
-      <p>Let&apos;s Rally (playersclub.io) helps you find people to play pickleball and tennis with. This page explains what we collect, why, and what you control.</p>
+      <p>Players Club (playersclub.io) helps you find people to play pickleball and tennis with. This page explains what we collect, why, and what you control.</p>
 
       <h2>What we collect</h2>
       <ul>
@@ -42,7 +42,7 @@ export default function Privacy() {
       </ul>
 
       <h2>Kids</h2>
-      <p>Let&apos;s Rally is for people 18 and over. We don&apos;t knowingly collect data from anyone younger.</p>
+      <p>Players Club is for people 18 and over. We don&apos;t knowingly collect data from anyone younger.</p>
 
       <h2>Contact</h2>
       <p>Questions: <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>

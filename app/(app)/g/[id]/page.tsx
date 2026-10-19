@@ -169,7 +169,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   async function share() {
     const text = `${headline} for ${sportMeta.label.toLowerCase()} ${game!.slots === 4 ? "doubles" : "singles"} at ${game!.courts.name}, ${when(game!.starts_at)}.`;
     try {
-      if (navigator.share) await navigator.share({ title: "Let's Rally", text, url });
+      if (navigator.share) await navigator.share({ title: "Players Club", text, url });
       else {
         await navigator.clipboard.writeText(`${text} ${url}`);
         toast("Invite link copied.");

@@ -13,12 +13,12 @@ const DESC = "Match with pickleball and tennis players near you within minutes. 
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.playersclub.io"),
-  title: "Let's Rally · Find pickleball & tennis players near you",
+  title: "Players Club · Find pickleball & tennis players near you",
   description: DESC,
-  openGraph: { title: "Let's Rally", description: DESC, url: "https://www.playersclub.io", siteName: "Let's Rally", type: "website" },
-  twitter: { card: "summary_large_image", title: "Let's Rally", description: DESC },
+  openGraph: { title: "Players Club", description: DESC, url: "https://www.playersclub.io", siteName: "Players Club", type: "website" },
+  twitter: { card: "summary_large_image", title: "Players Club", description: DESC },
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Let's Rally", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Players Club", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

@@ -99,7 +99,7 @@ export default function ProfileView({ userId: who }: { userId: string }) {
 
   async function share() {
     const url = `${window.location.origin}/p/${who}`;
-    const text = `${card?.display_name ?? "My"} on Let's Rally`;
+    const text = `${card?.display_name ?? "My"} on Players Club`;
     try {
       if (navigator.share) await navigator.share({ title: text, url });
       else {

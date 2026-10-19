@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 // Chinese 对打 is the word for hitting back and forth; Spanish "pelotear" is the tennis word
 // for rallying; Hindi and Urdu players use the English loanword "rally".
 const WORDS: { text: string; lang: string; dir?: "rtl" }[] = [
+  { text: "Players Club", lang: "en" },
   { text: "Let's rally", lang: "en" },
   { text: "Let's play", lang: "en" },
   { text: "来对打吧", lang: "zh-Hans" },
@@ -30,8 +31,8 @@ export default function RallyWordmark() {
   const w = WORDS[i];
   return (
     <div className="wordmark lp-wordmark">
-      <i aria-hidden="true" />
-      <span className="lp-word-slot" aria-label="Let's rally. Let's play.">
+      <img src="/mark.svg" alt="" aria-hidden="true" className="wm-mark" />
+      <span className="lp-word-slot" aria-label="Players Club. Let's play.">
         <span key={i} className="lp-word" lang={w.lang} dir={w.dir} aria-hidden="true">
           {w.text}
         </span>
