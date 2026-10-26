@@ -56,13 +56,18 @@ out center tags;`;
 
   let els: OsmEl[] | null = null;
   const errs: string[] = [];
-  for (const url of MIRRORS) {
+  // Busy servers answer slowly rather than not at all: one patient try on the main server, then a mirror.
+  const plan: [string, number][] = [
+    [MIRRORS[0], 32000],
+    [MIRRORS[1], 20000],
+  ];
+  for (const [url, ms] of plan) {
     try {
       const r = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "playersclub.io court finder (hello@playersclub.io)" },
         body: "data=" + encodeURIComponent(q),
-        signal: AbortSignal.timeout(18000),
+        signal: AbortSignal.timeout(ms),
       });
       if (r.ok) {
         els = ((await r.json()) as { elements: OsmEl[] }).elements;
