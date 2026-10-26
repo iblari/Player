@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:db": "node supabase/tests/ratings.test.mjs && node supabase/tests/chat.test.mjs"
+    "test:db": "node supabase/tests/ratings.test.mjs && node supabase/tests/chat.test.mjs && node supabase/tests/court_info.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

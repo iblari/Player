@@ -1,6 +1,8 @@
 // Turns OpenStreetMap data into court rows: groups neighbouring pitches into one venue,
 // names it after the park/school/club it sits in (or the street, or the town), and notes
-// which sports it hosts. Pure functions so they can be tested without the network.
+// which sports it hosts, plus hours, lights, phone and cost where the map has them. Pure functions so they can be tested without the network.
+
+import { infoFromTags, type CourtInfo } from "./courtInfo";
 
 export type Bbox = { s: number; w: number; n: number; e: number };
 export type OsmEl = {
@@ -23,7 +25,7 @@ export type CourtRow = {
   indoor: boolean;
   lit: boolean;
   members_only: boolean;
-};
+} & CourtInfo;
 
 export const CELL_LAT = 0.2;
 export const CELL_LNG = 0.25;
@@ -91,7 +93,7 @@ function fitName(name: string, fallback: string) {
 
 export function toCourtRows(els: OsmEl[]): CourtRow[] {
   const courts: { el: OsmEl; p: { lat: number; lng: number }; t: Record<string, string> }[] = [];
-  const containers: { name: string; kind: string | null; p: { lat: number; lng: number }; area: boolean }[] = [];
+  const containers: { name: string; kind: string | null; p: { lat: number; lng: number }; area: boolean; t: Record<string, string> }[] = [];
   const places: { name: string; p: { lat: number; lng: number }; rank: number }[] = [];
   const RANK: Record<string, number> = { neighbourhood: 1, quarter: 1, suburb: 2, hamlet: 2, village: 3, town: 3, city: 4 };
 
@@ -101,7 +103,7 @@ export function toCourtRows(els: OsmEl[]): CourtRow[] {
     if (!p) continue;
     if (isCourt(t)) courts.push({ el, p, t });
     if (t.place && t.name) places.push({ name: t.name, p, rank: RANK[t.place] ?? 2 });
-    else if (t.name && (t.leisure || t.amenity || t.club) && !(t.leisure === "pitch")) containers.push({ name: t.name, kind: kindOf(t), p, area: el.type !== "node" });
+    else if (t.name && (t.leisure || t.amenity || t.club) && !(t.leisure === "pitch")) containers.push({ name: t.name, kind: kindOf(t), p, area: el.type !== "node", t });
   }
 
   // Greedy clustering: pitches within 180 m of a group's first pitch are one venue.
@@ -144,6 +146,10 @@ export function toCourtRows(els: OsmEl[]): CourtRow[] {
       indoor: g.some((c) => c.t.indoor === "yes" || c.t.covered === "yes" || c.t.leisure === "sports_centre"),
       lit: g.some((c) => c.t.lit === "yes"),
       members_only: g.every((c) => ["private", "members", "customers"].includes(c.t.access ?? "")) && access !== "",
+      ...infoFromTags(
+        g.map((c) => c.t),
+        host?.t
+      ),
     };
   });
 }
