@@ -9,6 +9,7 @@ import { useSession } from "@/components/Session";
 import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
 import ActivityCard, { type Activity } from "@/components/ActivityCard";
+import ProfileQR from "@/components/ProfileQR";
 import { BackIcon } from "@/components/Icons";
 import { SPORT_META, SPORTS, type Sport } from "@/lib/types";
 import { fmtSkill } from "@/lib/util";
@@ -56,6 +57,7 @@ export default function ProfileView({ userId: who }: { userId: string }) {
   const self = userId === who;
   const [card, setCard] = useState<Card | null | undefined>();
   const [acts, setActs] = useState<Activity[] | null>(null);
+  const [qr, setQr] = useState(false);
   const [hist, setHist] = useState<Hist[]>([]);
   const [tab, setTab] = useState<"activities" | "progress">("activities");
   const [busy, setBusy] = useState(false);
@@ -83,8 +85,19 @@ export default function ProfileView({ userId: who }: { userId: string }) {
     load();
   }, [load]);
 
+  // Back from signing up after tapping Follow (or scanning a code): finish the follow once.
+  useEffect(() => {
+    if (!userId || self || !card || card.am_following) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("follow") !== "1") return;
+    q.delete("follow");
+    window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
+    toggleFollow();
+  }, [userId, self, card]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function toggleFollow() {
-    if (!userId) return router.push(`/login?next=/p/${who}`);
+    // Signed out: sign up first, then come back here and the follow finishes on its own.
+    if (!userId) return router.push(`/login?next=${encodeURIComponent(`/p/${who}?follow=1`)}`);
     if (!card) return;
     setBusy(true);
     const sb = supabase();
@@ -193,10 +206,19 @@ export default function ProfileView({ userId: who }: { userId: string }) {
             {card.am_following ? "Following" : "Follow"}
           </button>
         )}
-        <button className="btn" onClick={share}>
+        <button className="btn" onClick={() => setQr(true)}>
           Share profile
         </button>
       </div>
+      {qr && (
+        <ProfileQR
+          userId={who}
+          name={card.display_name}
+          avatar={card.avatar_url ?? null}
+          onShareLink={share}
+          onClose={() => setQr(false)}
+        />
+      )}
 
       <nav className="prof-tabs" role="tablist">
         {(["activities", "progress"] as const).map((t) => (

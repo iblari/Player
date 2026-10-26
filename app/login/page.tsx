@@ -22,7 +22,9 @@ function friendly(msg: string): string {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/play";
+  // Only ever continue to a page on this site after signing in.
+  const rawNext = params.get("next") || "/play";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\") ? rawNext : "/play";
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

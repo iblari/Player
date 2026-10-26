@@ -900,3 +900,13 @@ a.mf-back { text-decoration: none; }
 .story-preview.busy img { opacity: .55; }
 .story-sheet { gap: 12px; }
 .act-share { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Profile QR code */
+.qr-sheet { height: auto; max-height: 92dvh; gap: 12px; }
+.qr-card { background: #fff; color: #111; border-radius: 28px; padding: 24px 24px 22px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.qr-who { display: flex; align-items: center; gap: 12px; font-size: 1.15rem; }
+.qr-code { position: relative; width: min(72vw, 300px); aspect-ratio: 1; }
+.qr-svg, .qr-svg svg { display: block; width: 100%; height: 100%; }
+.qr-wait { background: #f2f2f2; border-radius: 12px; }
+.qr-logo { position: absolute; left: 50%; top: 50%; width: 22%; height: 22%; transform: translate(-50%, -50%); border-radius: 22%; outline: 5px solid #fff; }
+.qr-hint { font-size: 0.9rem; color: #555; text-align: center; max-width: 26ch; }

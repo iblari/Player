@@ -13,7 +13,8 @@ export type Ev =
   | "chat_sent"
   | "followed"
   | "story_opened"
-  | "story_shared";
+  | "story_shared"
+  | "profile_qr";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {
