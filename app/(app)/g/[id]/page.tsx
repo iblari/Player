@@ -20,20 +20,40 @@ import { fetchPlayers, JOIN_MESSAGES, nameOf, useLiveGames } from "@/lib/games";
 import { gameState, SPORT_META, type Game, type PlayerLite } from "@/lib/types";
 import { fmtSkill, pastLabel, timeOf, when } from "@/lib/util";
 
-type Row = { player_id: string; no_show: boolean; joined_at: string; paid_at?: string | null };
+type Row = {
+  player_id: string;
+  no_show: boolean;
+  joined_at: string;
+  paid_at?: string | null;
+};
 type Rel = { player_id: string; games: number; showed: number };
 
-export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
+export default function GamePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const search = useSearchParams();
   const { userId } = useSession();
   const toast = useToast();
-  const [game, setGame] = useState<(Game & { courts: { name: string; address: string | null; notes: string | null } }) | null | undefined>();
+  const [game, setGame] = useState<
+    | (Game & {
+        courts: { name: string; address: string | null; notes: string | null };
+      })
+    | null
+    | undefined
+  >();
   const [rows, setRows] = useState<Row[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({});
   const [rel, setRel] = useState<Record<string, Rel>>({});
-  const [teams, setTeams] = useState<{ team_a: string[]; team_b: string[] } | null>(null);
-  const [levels, setLevels] = useState<Record<string, { level: number | null; games: number }>>({});
+  const [teams, setTeams] = useState<{
+    team_a: string[];
+    team_b: string[];
+  } | null>(null);
+  const [levels, setLevels] = useState<
+    Record<string, { level: number | null; games: number }>
+  >({});
   const [pt, setPt] = useState<{ lat: number; lng: number } | null>(null);
   const [noShows, setNoShows] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -43,9 +63,17 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const load = useCallback(async () => {
     const sb = supabase();
     const [{ data: g }, { data: r }, { data: res }] = await Promise.all([
-      sb.from("games").select("*, courts(name, address, notes)").eq("id", id).maybeSingle(),
+      sb
+        .from("games")
+        .select("*, courts(name, address, notes)")
+        .eq("id", id)
+        .maybeSingle(),
       sb.from("game_players").select("*").eq("game_id", id).order("joined_at"),
-      sb.from("game_results").select("team_a, team_b").eq("game_id", id).maybeSingle(),
+      sb
+        .from("game_results")
+        .select("team_a, team_b")
+        .eq("game_id", id)
+        .maybeSingle(),
     ]);
     setTeams((res as { team_a: string[]; team_b: string[] } | null) ?? null);
     setGame(g ?? null);
@@ -58,18 +86,32 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     ((rr as Rel[]) ?? []).forEach((x) => (m[x.player_id] = x));
     setRel(m);
     if (g) {
-      const { data: lv, error: lvErr } = await sb.rpc("player_levels", { p_ids: ids, p_sport: g.sport ?? "pickleball" });
+      const { data: lv, error: lvErr } = await sb.rpc("player_levels", {
+        p_ids: ids,
+        p_sport: g.sport ?? "pickleball",
+      });
       const lm: Record<string, { level: number | null; games: number }> = {};
-      ((lv as { player_id: string; level: number | null; games: number }[]) ?? []).forEach(
-        (x) => (lm[x.player_id] = { level: x.level == null ? null : Number(x.level), games: x.games }),
+      (
+        (lv as { player_id: string; level: number | null; games: number }[]) ??
+        []
+      ).forEach(
+        (x) =>
+          (lm[x.player_id] = {
+            level: x.level == null ? null : Number(x.level),
+            games: x.games,
+          }),
       );
       // Database not migrated yet: show the profile level, as before.
-      if (lvErr) Object.entries(await fetchPlayers(ids)).forEach(([pid, p]) => (lm[pid] = { level: Number(p.skill), games: 0 }));
+      if (lvErr)
+        Object.entries(await fetchPlayers(ids)).forEach(
+          ([pid, p]) => (lm[pid] = { level: Number(p.skill), games: 0 }),
+        );
       setLevels(lm);
     }
     if (g && !pt) {
       const { data: p } = await sb.rpc("court_point", { p_court: g.court_id });
-      if ((p as { lat: number; lng: number }[])?.[0]) setPt((p as { lat: number; lng: number }[])[0]);
+      if ((p as { lat: number; lng: number }[])?.[0])
+        setPt((p as { lat: number; lng: number }[])[0]);
     }
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -78,14 +120,20 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   }, [load]);
   useLiveGames(load, { gameId: id });
   // Chat opens once a second player is in. Only players in the game can use it.
-  const chatOn = !!userId && rows.length >= 2 && rows.some((r) => r.player_id === userId) && game?.status !== "cancelled";
+  const chatOn =
+    !!userId &&
+    rows.length >= 2 &&
+    rows.some((r) => r.player_id === userId) &&
+    game?.status !== "cancelled";
   const chat = useUnread(id, userId, chatOn);
 
   useEffect(() => {
-    if (search.get("posted")) toast("Game posted. Players near the court were pinged.");
+    if (search.get("posted"))
+      toast("Game posted. Players near the court were pinged.");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (game === undefined) return <div className="skeleton" style={{ minHeight: 260 }} />;
+  if (game === undefined)
+    return <div className="skeleton" style={{ minHeight: 260 }} />;
   if (game === null)
     return (
       <div className="empty">
@@ -103,8 +151,13 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   // Once a score is logged, seat each team on its own side of the net.
   // The diagram fills spots left-top, right-top, left-bottom, right-bottom.
   const seated = teams
-    ? [teams.team_a[0], teams.team_b[0], teams.team_a[1], teams.team_b[1]].filter(Boolean)
-        .concat(ids.filter((pid) => !teams.team_a.includes(pid) && !teams.team_b.includes(pid)))
+    ? [teams.team_a[0], teams.team_b[0], teams.team_a[1], teams.team_b[1]]
+        .filter(Boolean)
+        .concat(
+          ids.filter(
+            (pid) => !teams.team_a.includes(pid) && !teams.team_b.includes(pid),
+          ),
+        )
     : ids;
   const st = gameState(game, n, game.slots);
   const left = game.slots - n;
@@ -113,10 +166,22 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const started = new Date(game.starts_at).getTime() < Date.now();
   const ended = !!game.ended_at || !!teams;
   const names = (pid: string) => nameOf(players, pid, userId);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/g/${game.id}` : "";
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/g/${game.id}`
+      : "";
 
-  const headline =
-    ended ? "Game over" : st === "full" ? "Game on" : st === "cancelled" ? "Cancelled" : st === "expired" ? "Didn't fill" : left === 1 ? "Need one more" : `Need ${left} more`;
+  const headline = ended
+    ? "Game over"
+    : st === "full"
+      ? "Game on"
+      : st === "cancelled"
+        ? "Cancelled"
+        : st === "expired"
+          ? "Didn't fill"
+          : left === 1
+            ? "Need one more"
+            : `Need ${left} more`;
 
   async function act(fn: () => Promise<void>) {
     setBusy(true);
@@ -131,12 +196,22 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     act(async () => {
       const res = await joinGame(id, confirmed);
       if (res === "needs_membership") return setAsk(true);
-      toast(res === "error" ? "Couldn't join. Try again." : JOIN_MESSAGES[res] ?? "Done.");
+      toast(
+        res === "error"
+          ? "Couldn't join. Try again."
+          : (JOIN_MESSAGES[res] ?? "Done."),
+      );
     });
   const leave = () =>
     act(async () => {
       const { data } = await supabase().rpc("leave_game", { p_game: id });
-      toast(data === "left" ? "You left the game." : data === "started" ? "This game already started." : "Couldn't leave.");
+      toast(
+        data === "left"
+          ? "You left the game."
+          : data === "started"
+            ? "This game already started."
+            : "Couldn't leave.",
+      );
     });
   const endGame = () =>
     act(async () => {
@@ -153,7 +228,10 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     });
   const cancel = () =>
     act(async () => {
-      const { error } = await supabase().from("games").update({ status: "cancelled" }).eq("id", id);
+      const { error } = await supabase()
+        .from("games")
+        .update({ status: "cancelled" })
+        .eq("id", id);
       toast(error ? "Couldn't cancel. Try again." : "Game cancelled.");
       setConfirmCancel(false);
     });
@@ -161,7 +239,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     act(async () => {
       const sb = supabase();
       for (const pid of ids) {
-        await sb.from("game_players").update({ no_show: noShows.includes(pid) }).eq("game_id", id).eq("player_id", pid);
+        await sb
+          .from("game_players")
+          .update({ no_show: noShows.includes(pid) })
+          .eq("game_id", id)
+          .eq("player_id", pid);
       }
       await sb.from("games").update({ attendance_done: true }).eq("id", id);
       toast("Attendance saved.");
@@ -169,7 +251,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   async function share() {
     const text = `${headline} for ${sportMeta.label.toLowerCase()} ${game!.slots === 4 ? "doubles" : "singles"} at ${game!.courts.name}, ${when(game!.starts_at)}.`;
     try {
-      if (navigator.share) await navigator.share({ title: "Players Club", text, url });
+      if (navigator.share)
+        await navigator.share({ title: "Players Club", text, url });
       else {
         await navigator.clipboard.writeText(`${text} ${url}`);
         toast("Invite link copied.");
@@ -184,12 +267,14 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       <div className="page-head">
         <div style={{ minWidth: 0 }}>
           <p className="sub" style={{ margin: "0 0 6px" }}>
-            {sportMeta.label} · {game.slots === 4 ? "Doubles" : "Singles"} at {game.courts.name}
+            {sportMeta.label} · {game.slots === 4 ? "Doubles" : "Singles"} at{" "}
+            {game.courts.name}
           </p>
           <h1>{headline}</h1>
           {st === "open" && (
             <p className="finding" style={{ margin: "8px 0 0" }}>
-              <span className="pulse" aria-hidden="true" /> Finding players near {game.courts.name}
+              <span className="pulse" aria-hidden="true" /> Finding players near{" "}
+              {game.courts.name}
             </p>
           )}
         </div>
@@ -202,11 +287,24 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       {game.members_only && (
         <div className="notice">
           <b>{game.club ?? "Members"} only</b>
-          <span className="muted">{game.club ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.` : "Private court. Players confirm they're members or a member's guest before joining."}</span>
+          <span className="muted">
+            {game.club
+              ? `Only confirmed ${game.club} members can join. Guests can't play. Bring your membership card.`
+              : "Private court. Players confirm they're members or a member's guest before joining."}
+          </span>
         </div>
       )}
-      {userId && inGame && !started && (st === "open" || st === "full") && <PushPrompt userId={userId} waiting={st === "open"} />}
-      <CourtDiagram slots={game.slots} players={seated.map((pid) => ({ id: pid, name: names(pid), isMe: pid === userId }))} />
+      {userId && inGame && !started && (st === "open" || st === "full") && (
+        <PushPrompt userId={userId} waiting={st === "open"} />
+      )}
+      <CourtDiagram
+        slots={game.slots}
+        players={seated.map((pid) => ({
+          id: pid,
+          name: names(pid),
+          isMe: pid === userId,
+        }))}
+      />
 
       <div className="facts">
         <div className="fact">
@@ -225,7 +323,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </div>
         <div className="fact">
           <span>{st === "open" ? "Request open until" : "Posted"}</span>
-          <b>{st === "open" ? timeOf(game.expires_at) : pastLabel(game.created_at)}</b>
+          <b>
+            {st === "open"
+              ? timeOf(game.expires_at)
+              : pastLabel(game.created_at)}
+          </b>
         </div>
       </div>
       {!!game.fee_total && Number(game.fee_total) > 0 && st !== "cancelled" && (
@@ -243,29 +345,59 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           onChange={load}
         />
       )}
-      {game.note && <p style={{ margin: 0 }}>&ldquo;{game.note}&rdquo; <span className="muted small">from {names(game.host_id)}</span></p>}
+      {game.note && (
+        <p style={{ margin: 0 }}>
+          &ldquo;{game.note}&rdquo;{" "}
+          <span className="muted small">from {names(game.host_id)}</span>
+        </p>
+      )}
 
       {st !== "cancelled" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {!userId ? (
-            <Link className="btn btn-ball btn-block" href={`/login?next=/g/${id}`}>
+            <Link
+              className="btn btn-ball btn-block"
+              href={`/login?next=/g/${id}`}
+            >
               Sign in to join
             </Link>
           ) : st === "open" && !inGame ? (
-            <button className="btn btn-ball btn-block" onClick={() => join()} disabled={busy}>
-              I&apos;m in{game.fee_total ? ` · ${money(feeShare(Number(game.fee_total), game.slots))} court share` : ""}
+            <button
+              className="btn btn-ball btn-block"
+              onClick={() => join()}
+              disabled={busy}
+            >
+              I&apos;m in
+              {game.fee_total
+                ? ` · ${money(feeShare(Number(game.fee_total), game.slots))} court share`
+                : ""}
             </button>
           ) : null}
           {chatOn && !chat.missing && (
-            <Link className={`btn btn-block btn-chat${st === "full" ? " btn-ball" : ""}`} href={`/g/${id}/chat`}>
+            <Link
+              className={`btn btn-block btn-chat${st === "full" ? " btn-ball" : ""}`}
+              href={`/g/${id}/chat`}
+            >
               <ChatIcon />
-              {chat.count ? "Open group chat" : st === "full" ? "Start group chat" : "Message players"}
-              {chat.unread > 0 && <span className="chat-dot" aria-label={`${chat.unread} unread`}>{chat.unread}</span>}
+              {chat.count
+                ? "Open group chat"
+                : st === "full"
+                  ? "Start group chat"
+                  : "Message players"}
+              {chat.unread > 0 && (
+                <span className="chat-dot" aria-label={`${chat.unread} unread`}>
+                  {chat.unread}
+                </span>
+              )}
             </Link>
           )}
           {/* Before the start time only the host can end it; after that, any player. */}
           {inGame && !ended && (started || (isHost && st === "full")) && (
-            <button className="btn btn-block btn-end" onClick={endGame} disabled={busy}>
+            <button
+              className="btn btn-block btn-end"
+              onClick={endGame}
+              disabled={busy}
+            >
               Mark game ended
             </button>
           )}
@@ -274,7 +406,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               Share invite
             </button>
             {pt && (
-              <a className="btn" href={`https://www.google.com/maps/dir/?api=1&destination=${pt.lat},${pt.lng}`} target="_blank" rel="noreferrer">
+              <a
+                className="btn"
+                href={`https://www.google.com/maps/dir/?api=1&destination=${pt.lat},${pt.lng}`}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Directions
               </a>
             )}
@@ -294,23 +431,43 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
             const r = rel[pid];
             return (
               <div className="roster-row" key={pid}>
-                <Avatar id={pid} name={names(pid)} src={players[pid]?.avatar_url} />
+                <Avatar
+                  id={pid}
+                  name={names(pid)}
+                  src={players[pid]?.avatar_url}
+                />
                 <div className="grow">
-                  <Link href={pid === userId ? "/me" : `/p/${pid}`} className="roster-name">
+                  <Link
+                    href={pid === userId ? "/me" : `/p/${pid}`}
+                    className="roster-name"
+                  >
                     {names(pid)}
                   </Link>
-                  {pid === game.host_id && <span className="pill" style={{ marginLeft: 8 }}>Host</span>}
-                  {!!game.fee_total && pid !== game.host_id && (isHost || pid === userId) && (
-                    <span className={`pill${rows.find((x) => x.player_id === pid)?.paid_at ? " pill-ok" : ""}`} style={{ marginLeft: 8 }}>
-                      {rows.find((x) => x.player_id === pid)?.paid_at ? "Paid" : `Owes ${money(feeShare(Number(game.fee_total), game.slots))}`}
+                  {pid === game.host_id && (
+                    <span className="pill" style={{ marginLeft: 8 }}>
+                      Host
                     </span>
                   )}
+                  {!!game.fee_total &&
+                    pid !== game.host_id &&
+                    (isHost || pid === userId) && (
+                      <span
+                        className={`pill${rows.find((x) => x.player_id === pid)?.paid_at ? " pill-ok" : ""}`}
+                        style={{ marginLeft: 8 }}
+                      >
+                        {rows.find((x) => x.player_id === pid)?.paid_at
+                          ? "Paid"
+                          : `Owes ${money(feeShare(Number(game.fee_total), game.slots))}`}
+                      </span>
+                    )}
                   <div className="small muted">
                     {[
                       levels[pid]?.level != null
                         ? `${sportMeta.label} ${fmtSkill(levels[pid].level!)}${levels[pid].games ? ` · ${levels[pid].games} rated` : " · self-rated"}`
                         : null,
-                      r ? `shows up ${Math.round((r.showed / r.games) * 100)}% of ${r.games}` : "new player",
+                      r
+                        ? `shows up ${Math.round((r.showed / r.games) * 100)}% of ${r.games}`
+                        : "new player",
                     ]
                       .filter(Boolean)
                       .join(", ")}
@@ -322,7 +479,15 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           {st === "open" &&
             Array.from({ length: left }).map((_, i) => (
               <div className="roster-row" key={`open-${i}`}>
-                <span className="avatar" style={{ width: 36, height: 36, background: "transparent", border: "2px dashed var(--line)" }} />
+                <span
+                  className="avatar"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    background: "transparent",
+                    border: "2px dashed var(--line)",
+                  }}
+                />
                 <span className="muted">Open spot</span>
               </div>
             ))}
@@ -333,41 +498,62 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         <section className="block">
           <h2>Did everyone show?</h2>
           <p className="small muted" style={{ margin: 0 }}>
-            Tick anyone who didn&apos;t. This builds each player&apos;s show-up rate.
+            Tick anyone who didn&apos;t. This builds each player&apos;s show-up
+            rate.
           </p>
           <div className="roster">
             {ids
               .filter((pid) => pid !== userId)
               .map((pid) => (
-                <label className="roster-row" key={pid} style={{ cursor: "pointer" }}>
+                <label
+                  className="roster-row"
+                  key={pid}
+                  style={{ cursor: "pointer" }}
+                >
                   <input
                     type="checkbox"
                     checked={noShows.includes(pid)}
-                    onChange={(e) => setNoShows((xs) => (e.target.checked ? [...xs, pid] : xs.filter((x) => x !== pid)))}
+                    onChange={(e) =>
+                      setNoShows((xs) =>
+                        e.target.checked
+                          ? [...xs, pid]
+                          : xs.filter((x) => x !== pid),
+                      )
+                    }
                     style={{ width: 22, height: 22 }}
                   />
                   <span className="grow">{names(pid)} didn&apos;t show</span>
                 </label>
               ))}
           </div>
-          <button className="btn btn-primary" onClick={saveAttendance} disabled={busy}>
+          <button
+            className="btn btn-primary"
+            onClick={saveAttendance}
+            disabled={busy}
+          >
             Save attendance
           </button>
         </section>
       )}
 
-      {userId && inGame && (started || ended) && st !== "cancelled" && showed.length >= 2 && (
-        <GameResult
-          gameId={game.id}
-          sport={game.sport ?? "pickleball"}
-          players={showed}
-          userId={userId}
-          nameOf={names}
-          avatarOf={(pid) => players[pid]?.avatar_url}
-          onScored={load}
-          hostId={game.host_id}
-        />
-      )}
+      {userId &&
+        inGame &&
+        (started || ended) &&
+        st !== "cancelled" &&
+        showed.length >= 2 && (
+          <div id="score" style={{ scrollMarginTop: 16 }}>
+            <GameResult
+              gameId={game.id}
+              sport={game.sport ?? "pickleball"}
+              players={showed}
+              userId={userId}
+              nameOf={names}
+              avatarOf={(pid) => players[pid]?.avatar_url}
+              onScored={load}
+              hostId={game.host_id}
+            />
+          </div>
+        )}
 
       {!started && st !== "cancelled" && (inGame || isHost) && (
         <div>
@@ -376,21 +562,35 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               <div className="notice">
                 <b>Cancel this game? Everyone in it will see it&apos;s off.</b>
                 <div className="btn-row" style={{ width: "100%" }}>
-                  <button className="btn btn-sm btn-danger" onClick={cancel} disabled={busy}>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={cancel}
+                    disabled={busy}
+                  >
                     Cancel game
                   </button>
-                  <button className="btn btn-sm" onClick={() => setConfirmCancel(false)}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => setConfirmCancel(false)}
+                  >
                     Keep it
                   </button>
                 </div>
               </div>
             ) : (
-              <button className="btn btn-ghost btn-block btn-danger" onClick={() => setConfirmCancel(true)}>
+              <button
+                className="btn btn-ghost btn-block btn-danger"
+                onClick={() => setConfirmCancel(true)}
+              >
                 Cancel game
               </button>
             )
           ) : (
-            <button className="btn btn-ghost btn-block" onClick={leave} disabled={busy}>
+            <button
+              className="btn btn-ghost btn-block"
+              onClick={leave}
+              disabled={busy}
+            >
               Leave game
             </button>
           )}

@@ -31,10 +31,24 @@ export type Activity = {
 };
 type Vis = "everyone" | "followers" | "private";
 
-const VIS_LABEL: Record<Vis, string> = { everyone: "Everyone", followers: "Followers", private: "Only me" };
+const VIS_LABEL: Record<Vis, string> = {
+  everyone: "Everyone",
+  followers: "Followers",
+  private: "Only me",
+};
 
 function VisIcon({ v }: { v: Vis }) {
-  const p = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  const p = {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
   if (v === "private")
     return (
       <svg {...p}>
@@ -57,7 +71,10 @@ function VisIcon({ v }: { v: Vis }) {
   );
 }
 
-const dur = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ""}`.trim() : `${m}m`);
+const dur = (m: number) =>
+  m >= 60
+    ? `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ""}`.trim()
+    : `${m}m`;
 
 /** One finished game, Strava-style: who, where, result, time on court, and the rating move. */
 export default function ActivityCard({
@@ -82,22 +99,37 @@ export default function ActivityCard({
   const eff = (a.effective_visibility ?? a.visibility ?? "everyone") as Vis;
   const meta = SPORT_META[a.sport] ?? SPORT_META.pickleball;
   const players = a.players ?? [];
-  const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
+  const nameOf = (id: string) =>
+    players.find((p) => p.id === id)?.name || "Player";
   const others = players.filter((p) => p.id !== ownerId);
   const onA = a.team_a?.includes(ownerId);
   const mine = a.score_a == null ? null : onA ? a.score_a : a.score_b;
   const theirs = a.score_a == null ? null : onA ? a.score_b : a.score_a;
-  const partner = a.slots === 4 && a.team_a && a.team_b ? (onA ? a.team_a : a.team_b).find((x) => x !== ownerId) : undefined;
-  const opponents = a.team_a && a.team_b ? (onA ? a.team_b : a.team_a) : others.map((p) => p.id);
-  const delta = a.level_before != null && a.level_after != null ? Number(a.level_after) - Number(a.level_before) : null;
+  const partner =
+    a.slots === 4 && a.team_a && a.team_b
+      ? (onA ? a.team_a : a.team_b).find((x) => x !== ownerId)
+      : undefined;
+  const opponents =
+    a.team_a && a.team_b
+      ? onA
+        ? a.team_b
+        : a.team_a
+      : others.map((p) => p.id);
+  const delta =
+    a.level_before != null && a.level_after != null
+      ? Number(a.level_after) - Number(a.level_before)
+      : null;
   // Seat players by team on the diagram: my side left.
-  const seated = a.team_a && a.team_b
-    ? (() => {
-        const mySide = onA ? a.team_a! : a.team_b!;
-        const other = onA ? a.team_b! : a.team_a!;
-        return [mySide[0], other[0], mySide[1], other[1]].filter(Boolean) as string[];
-      })()
-    : players.map((p) => p.id);
+  const seated =
+    a.team_a && a.team_b
+      ? (() => {
+          const mySide = onA ? a.team_a! : a.team_b!;
+          const other = onA ? a.team_b! : a.team_a!;
+          return [mySide[0], other[0], mySide[1], other[1]].filter(
+            Boolean,
+          ) as string[];
+        })()
+      : players.map((p) => p.id);
 
   const kind = a.slots === 4 ? "doubles" : "singles";
   const level = a.score_a != null && a.score_a === a.score_b;
@@ -107,7 +139,9 @@ export default function ActivityCard({
       ? `${meta.label} ${kind}`
       : `${a.won ? "Won" : "Lost"} ${meta.label.toLowerCase()} ${kind}`;
   const unit = a.sport === "tennis" ? "sets" : "games";
-  const myGames = (a.games ?? []).map(([x, y]) => (onA ? [x, y] : [y, x]) as [number, number]);
+  const myGames = (a.games ?? []).map(
+    ([x, y]) => (onA ? [x, y] : [y, x]) as [number, number],
+  );
 
   return (
     <article className="act">
@@ -123,7 +157,12 @@ export default function ActivityCard({
         <span className={`act-sport act-${a.sport}`}>{meta.label}</span>
         {editable && (
           <span className="act-vis-wrap">
-            <button className={`act-vis act-vis-${eff}`} onClick={() => setMenu((x) => !x)} aria-label={`Who can see this: ${VIS_LABEL[eff]}`} aria-expanded={menu}>
+            <button
+              className={`act-vis act-vis-${eff}`}
+              onClick={() => setMenu((x) => !x)}
+              aria-label={`Who can see this: ${VIS_LABEL[eff]}`}
+              aria-expanded={menu}
+            >
               <VisIcon v={eff} />
             </button>
             {menu && (
@@ -181,8 +220,14 @@ export default function ActivityCard({
 
       <div className="act-stats">
         <div>
-          <span>{myGames.length > 1 ? `${unit[0].toUpperCase()}${unit.slice(1)} won` : "Score"}</span>
-          <b className={a.won ? "win" : ""}>{mine != null ? `${mine}–${theirs}` : "–"}</b>
+          <span>
+            {myGames.length > 1
+              ? `${unit[0].toUpperCase()}${unit.slice(1)} won`
+              : "Score"}
+          </span>
+          <b className={a.won ? "win" : ""}>
+            {mine != null ? `${mine}–${theirs}` : "–"}
+          </b>
         </div>
         <div>
           <span>Time</span>
@@ -192,13 +237,20 @@ export default function ActivityCard({
           <span>{meta.rating}</span>
           <b>
             {a.level_after != null ? fmtSkill(Number(a.level_after)) : "–"}
-            {delta != null && Math.abs(delta) >= 0.005 && <em className={delta > 0 ? "up" : "down"}>{delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)}</em>}
+            {delta != null && Math.abs(delta) >= 0.005 && (
+              <em className={delta > 0 ? "up" : "down"}>
+                {delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)}
+              </em>
+            )}
           </b>
         </div>
       </div>
 
       {myGames.length > 1 && (
-        <div className="act-games" aria-label={`Scores by ${unit.slice(0, -1)}`}>
+        <div
+          className="act-games"
+          aria-label={`Scores by ${unit.slice(0, -1)}`}
+        >
           {myGames.map(([m, t], i) => (
             <span key={i} className={m > t ? "w" : ""}>
               {m}–{t}
@@ -207,12 +259,35 @@ export default function ActivityCard({
         </div>
       )}
 
-      <Link href={`/g/${a.game_id}`} className="act-court" aria-label="Open this game">
-        <CourtDiagram slots={a.slots} players={seated.map((id) => ({ id, name: nameOf(id), isMe: id === ownerId }))} />
+      <Link
+        href={`/g/${a.game_id}`}
+        className="act-court"
+        aria-label="Open this game"
+      >
+        <CourtDiagram
+          slots={a.slots}
+          players={seated.map((id) => ({
+            id,
+            name: nameOf(id),
+            isMe: id === ownerId,
+          }))}
+        />
       </Link>
-      {editable && a.score_a != null && (
-        <StoryShare gameId={a.game_id} userId={ownerId} activity={a} all={all} className="btn btn-sm act-share" />
-      )}
+      {editable &&
+        (a.score_a != null ? (
+          <StoryShare
+            gameId={a.game_id}
+            userId={ownerId}
+            activity={a}
+            all={all}
+            className="btn btn-sm act-share"
+          />
+        ) : (
+          // No final score yet, so nothing to put on a story card: send them to add it.
+          <Link href={`/g/${a.game_id}#score`} className="btn btn-sm act-share">
+            Add score to share
+          </Link>
+        ))}
     </article>
   );
 }
