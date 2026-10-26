@@ -41,17 +41,21 @@ export async function POST(request: Request) {
   const at = (pt as { lat: number; lng: number }[] | null)?.[0];
   if (!at) return NextResponse.json({ ok: false, reason: "no_location" });
 
-  const ll = `${at.lat.toFixed(6)},${at.lng.toFixed(6)}`;
+  // A ~1 km box around the court. Box filters are fast on Overpass; "around" searches time out.
+  const dLat = 0.0045;
+  const dLng = dLat / Math.cos((at.lat * Math.PI) / 180);
+  const bb = `${(at.lat - dLat).toFixed(5)},${(at.lng - dLng).toFixed(5)},${(at.lat + dLat).toFixed(5)},${(at.lng + dLng).toFixed(5)}`;
   const q = `[out:json][timeout:25];
 (
-  nwr(around:300,${ll})["leisure"~"^(pitch|sports_centre)$"]["sport"~"tennis|pickleball"];
-  nwr(around:450,${ll})["leisure"~"^(park|recreation_ground|sports_centre)$"]["name"];
-  nwr(around:450,${ll})["club"]["name"];
-  nwr(around:450,${ll})["amenity"~"^(school|college|university|community_centre)$"]["name"];
+  nwr["leisure"~"^(pitch|sports_centre)$"]["sport"~"tennis|pickleball"](${bb});
+  nwr["leisure"~"^(park|recreation_ground|sports_centre)$"]["name"](${bb});
+  nwr["club"]["name"](${bb});
+  nwr["amenity"~"^(school|college|university|community_centre)$"]["name"](${bb});
 );
 out center tags;`;
 
   let els: OsmEl[] | null = null;
+  const errs: string[] = [];
   for (const url of MIRRORS) {
     try {
       const r = await fetch(url, {
@@ -64,11 +68,12 @@ out center tags;`;
         els = ((await r.json()) as { elements: OsmEl[] }).elements;
         break;
       }
-    } catch {
-      /* try the next mirror */
+      errs.push(`${new URL(url).host} ${r.status}`);
+    } catch (e) {
+      errs.push(`${new URL(url).host} ${(e as Error).name}`);
     }
   }
-  if (!els) return NextResponse.json({ ok: false, reason: "map_unavailable" }, { status: 502 });
+  if (!els) return NextResponse.json({ ok: false, reason: "map_unavailable", detail: errs }, { status: 502 });
 
   // The courts: this venue's own map entry plus its neighbours, else whatever courts are closest.
   const withPos = els.map((e) => ({ e, p: pos(e), t: e.tags ?? {} })).filter((x) => x.p) as { e: OsmEl; p: { lat: number; lng: number }; t: Record<string, string> }[];
