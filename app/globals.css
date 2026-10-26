@@ -890,3 +890,13 @@ a.mf-back { text-decoration: none; }
 .k-free { background: var(--ball); }
 .k-idle { background: rgba(160,160,160,.6); }
 .k-court { background: #fff; border-radius: 3px !important; }
+
+/* Share to story */
+.story-head { display: flex; align-items: center; justify-content: space-between; }
+.story-seg { grid-template-columns: 1fr 1fr; }
+.story-seg button { min-height: 44px; font-weight: 700; }
+.story-preview { height: min(54dvh, 620px); flex: none; display: flex; justify-content: center; align-items: center; }
+.story-preview img { height: min(54dvh, 620px); width: auto; max-width: 100%; object-fit: contain; border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,.45); transition: opacity .2s; }
+.story-preview.busy img { opacity: .55; }
+.story-sheet { gap: 12px; }
+.act-share { display: inline-flex; align-items: center; gap: 6px; }

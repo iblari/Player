@@ -1,4 +1,5 @@
 "use client";
+import StoryShare from "@/components/StoryShare";
 import { useCallback, useEffect, useState } from "react";
 import { track } from "@/lib/track";
 import { supabase } from "@/lib/supabase/client";
@@ -304,6 +305,7 @@ export default function GameResult({
       {gamesOf(result).length > 1 && (
         <GamesTable games={gamesOf(result)} unit={unit} left={name(result.team_a)} right={name(result.team_b)} compact />
       )}
+      {players.includes(userId) && <StoryShare gameId={gameId} userId={userId} />}
       {me && (
         <div className="level-delta">
           <span>Your {meta.label.toLowerCase()} level</span>

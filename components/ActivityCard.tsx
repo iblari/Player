@@ -5,6 +5,7 @@ import Avatar from "@/components/Avatar";
 import CourtDiagram from "@/components/CourtDiagram";
 import { SPORT_META, type Sport } from "@/lib/types";
 import { fmtSkill, pastLabel } from "@/lib/util";
+import StoryShare from "@/components/StoryShare";
 
 export type Activity = {
   game_id: string;
@@ -66,6 +67,7 @@ export default function ActivityCard({
   ownerAvatar,
   editable,
   onVisibility,
+  all,
 }: {
   a: Activity;
   ownerId: string;
@@ -73,6 +75,8 @@ export default function ActivityCard({
   ownerAvatar: string | null;
   editable?: boolean;
   onVisibility?: (v: Vis | null) => void;
+  /** The owner's loaded games, for record and streak on the story card. */
+  all?: Activity[];
 }) {
   const [menu, setMenu] = useState(false);
   const eff = (a.effective_visibility ?? a.visibility ?? "everyone") as Vis;
@@ -206,6 +210,9 @@ export default function ActivityCard({
       <Link href={`/g/${a.game_id}`} className="act-court" aria-label="Open this game">
         <CourtDiagram slots={a.slots} players={seated.map((id) => ({ id, name: nameOf(id), isMe: id === ownerId }))} />
       </Link>
+      {editable && a.score_a != null && (
+        <StoryShare gameId={a.game_id} userId={ownerId} activity={a} all={all} className="btn btn-sm act-share" />
+      )}
     </article>
   );
 }

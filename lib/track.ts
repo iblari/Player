@@ -11,7 +11,9 @@ export type Ev =
   | "game_joined"
   | "score_saved"
   | "chat_sent"
-  | "followed";
+  | "followed"
+  | "story_opened"
+  | "story_shared";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {

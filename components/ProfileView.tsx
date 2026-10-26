@@ -239,6 +239,7 @@ export default function ProfileView({ userId: who }: { userId: string }) {
                 ownerName={card.display_name || "Player"}
                 ownerAvatar={card.avatar_url}
                 editable={self}
+                all={acts}
                 onVisibility={async (v) => {
                   const { error } = await supabase().rpc("set_activity_visibility", { p_game: a.game_id, p_vis: v });
                   if (error) return toast(isMissing(error) ? "Per-game visibility switches on with the next update." : "Couldn't change it. Try again.");
