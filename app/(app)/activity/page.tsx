@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/components/Session";
 import GameRow from "@/components/GameRow";
-import { ChevronIcon } from "@/components/Icons";
+import { ChevronIcon, SearchIcon } from "@/components/Icons";
 import { fetchMyGames, fetchPlayers, nameOf, useLiveGames, type GameView } from "@/lib/games";
 import type { PlayerLite } from "@/lib/types";
 
@@ -31,6 +31,14 @@ export default function ActivityPage() {
     <>
       <div className="page-head">
         <h1>Activity</h1>
+      </div>
+      <div className="act-actions">
+        <Link className="btn" href="/players">
+          <SearchIcon /> Find players
+        </Link>
+        <Link className="btn" href="/log">
+          <span aria-hidden="true">+</span> Log a match
+        </Link>
       </div>
 
       <section className="block">

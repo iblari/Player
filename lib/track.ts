@@ -14,7 +14,11 @@ export type Ev =
   | "followed"
   | "story_opened"
   | "story_shared"
-  | "profile_qr";
+  | "profile_qr"
+  | "match_logged"
+  | "logged_confirmed"
+  | "logged_rejected"
+  | "player_search";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {

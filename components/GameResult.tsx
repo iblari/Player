@@ -36,6 +36,7 @@ export default function GameResult({
   avatarOf,
   onScored,
   hostId,
+  logged = false,
 }: {
   gameId: string;
   sport: Sport;
@@ -45,6 +46,8 @@ export default function GameResult({
   avatarOf: (id: string) => string | null | undefined;
   onScored?: () => void;
   hostId: string;
+  /** Logged after the fact: counts only once someone on the other side agrees. */
+  logged?: boolean;
 }) {
   const isHost = userId === hostId;
   const toast = useToast();
@@ -148,7 +151,9 @@ export default function GameResult({
       return setErr(key ? ERRORS[key] : "Couldn't save the score. Try again.");
     }
     const status = (data as { status?: string } | null)?.status;
-    if (status === "pending") {
+    if (status === "awaiting_confirm") toast("Saved. It counts once the other side confirms.");
+    else if (status === "disputed") toast(`Sent. It counts once ${nameOf(hostId)} agrees with your score.`);
+    else if (status === "pending") {
       toast(`Score sent. ${nameOf(hostId)} confirms it, or it's final in 24 hours.`);
       fetch("/api/notify-score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId }) }).catch(() => {});
     } else toast("Final score saved. Ratings updated.");
@@ -170,7 +175,118 @@ export default function GameResult({
   const me = hist.find((h) => h.player_id === userId);
   const fmt = (x: number) => x.toFixed(2);
 
-  if (!result && !isHost && mine_ && !editing) {
+  if (logged && !result && !editing) {
+    const hr = reports.find((r) => r.reporter_id === hostId);
+    if (hr) return LoggedView();
+  }
+
+  function LoggedView() {
+    const hr = reports.find((r) => r.reporter_id === hostId)!;
+    const s = fromMySide(hr);
+    const onLoggerSide = hr.team_a.includes(userId);
+    const theirTake = reports.find((r) => r.reporter_id !== hostId && !hr.team_a.includes(r.reporter_id));
+    const differs = theirTake && fromMySide(theirTake).games.map((g) => g.join("-")).join() !== s.games.map((g) => g.join("-")).join();
+    const myTeam = onLoggerSide ? hr.team_a : hr.team_b;
+    const otherTeam = onLoggerSide ? hr.team_b : hr.team_a;
+    const w = s.games.filter(([m, t]) => m > t).length;
+    const l = s.games.filter(([m, t]) => t > m).length;
+
+    async function confirm() {
+      setBusy(true);
+      const { data, error } = await supabase().rpc("submit_results", { p_game: gameId, p_team_a: myTeam, p_team_b: otherTeam, p_games: s.games });
+      setBusy(false);
+      if (error) return toast("Couldn't confirm. Try again.");
+      if ((data as { status?: string } | null)?.status === "final") toast("Confirmed. Ratings updated.");
+      track("logged_confirmed");
+      load();
+      onScored?.();
+    }
+    async function reject() {
+      if (!window.confirm(isHost ? "Remove this match?" : "Remove this match? It'll disappear for everyone.")) return;
+      setBusy(true);
+      const { error } = await supabase().rpc("reject_logged", { p_game: gameId });
+      setBusy(false);
+      if (error) return toast("Couldn't remove it. Try again.");
+      track("logged_rejected", { by: isHost ? "logger" : "player" });
+      toast("Removed.");
+      onScored?.();
+    }
+
+    if (onLoggerSide)
+      return (
+        <section className="block result">
+          <h2>Waiting for confirmation</h2>
+          <GamesTable games={s.games} unit={unit} left={doubles ? "Your team" : "You"} right="Them" />
+          {differs && theirTake ? (
+            <div className="notice" style={{ borderColor: "var(--ball)" }}>
+              <b>
+                {nameOf(theirTake.reporter_id)} entered {fromMySide(theirTake).games.map(([m, t]) => `${m}–${t}`).join(", ")} (you–them)
+              </b>
+              <span className="muted">It counts once you both agree.{isHost ? " If they're right, use their score." : ""}</span>
+            </div>
+          ) : (
+            <p className="small muted" style={{ margin: 0 }}>
+              {isHost ? "You logged this match." : `${nameOf(hostId)} logged this match.`} It counts toward ratings once {otherTeam.map(nameOf).join(" or ")} confirms.
+            </p>
+          )}
+          {isHost && (
+            <div className="btn-row">
+              {differs && theirTake && (
+                <button
+                  className="btn btn-ball"
+                  disabled={busy}
+                  onClick={() => {
+                    prefill(theirTake);
+                    setEditing(true);
+                  }}
+                >
+                  Use their score
+                </button>
+              )}
+              <button className="btn" disabled={busy} onClick={() => setEditing(true)}>
+                Edit score
+              </button>
+              <button className="btn btn-ghost" disabled={busy} onClick={reject}>
+                Remove
+              </button>
+            </div>
+          )}
+        </section>
+      );
+
+    const mineDiffers = mine_ && fromMySide(mine_).games.map((g) => g.join("-")).join() !== s.games.map((g) => g.join("-")).join();
+    return (
+      <section className="block result">
+        <h2>{mineDiffers ? "Waiting for " + nameOf(hostId) : "Is this right?"}</h2>
+        <p className="small muted" style={{ margin: 0 }}>
+          {mineDiffers
+            ? `You entered a different score. It counts once ${nameOf(hostId)} agrees, or you can accept theirs:`
+            : `${nameOf(hostId)} logged a ${meta.label.toLowerCase()} match with you: you ${w > l ? "won" : w < l ? "lost" : "split"} ${w}–${l}.`}
+        </p>
+        <GamesTable games={s.games} unit={unit} left={doubles ? "Your team" : "You"} right="Them" />
+        <button className="btn btn-ball btn-block" disabled={busy} onClick={confirm}>
+          {mineDiffers ? `Accept ${nameOf(hostId)}'s score` : "Yes, confirm"}
+        </button>
+        <div className="btn-row">
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() => {
+              prefill(mine_ ?? hr);
+              setEditing(true);
+            }}
+          >
+            {mineDiffers ? "Change my score" : "Different score"}
+          </button>
+          <button className="btn btn-ghost" disabled={busy} onClick={reject}>
+            This didn&apos;t happen
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (!result && !isHost && mine_ && !editing && !logged) {
     const s = fromMySide(mine_);
     const deadline = new Date(new Date(reports.filter((r) => r.reporter_id !== hostId)[0]?.created_at ?? mine_.created_at).getTime() + 864e5);
     return (
@@ -202,7 +318,9 @@ export default function GameResult({
           </div>
         ) : (
           <p className="small muted" style={{ margin: 0 }}>
-            {isHost
+            {logged
+              ? "This match was logged after it was played. It counts once both sides agree on the score."
+              : isHost
               ? `As host, your score is final. It updates each player's ${meta.label.toLowerCase()} level.`
               : `Enter the score. ${nameOf(hostId)} (host) confirms it, or it's final after 24 hours.`}
           </p>

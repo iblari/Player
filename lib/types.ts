@@ -75,6 +75,8 @@ export type Game = {
   created_at: string;
   filled_at: string | null;
   ended_at?: string | null;
+  /** Logged after it was played (counts once the other side confirms). */
+  logged?: boolean;
   fee_total?: number | null;
   fee_minutes?: number | null;
   sport: Sport;

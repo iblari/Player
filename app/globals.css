@@ -928,3 +928,39 @@ a.mf-back { text-decoration: none; }
 .agent-edit { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; border-top: 1px solid var(--line); }
 .agent-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .agent-edit .input { font-size: 16px; }
+
+/* Find players */
+.psearch { display: flex; flex-direction: column; gap: 12px; }
+.psearch-box { cursor: text; }
+.psearch-input { flex: 1; min-width: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 17px; outline: none; }
+.psearch-clear { border: 0; background: var(--sunk); color: var(--muted); width: 26px; height: 26px; border-radius: 50%; font-size: 18px; line-height: 1; cursor: pointer; flex: none; }
+.psearch-cap { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 -4px; }
+.psearch-empty { margin: 4px 2px; }
+.psearch-row { gap: 12px; align-items: center; }
+button.psearch-row { width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.psearch-link { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: inherit; text-decoration: none; }
+.psearch-link .grow, .psearch-row .grow { min-width: 0; }
+.psearch-row .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psearch-add { color: var(--ball); font-weight: 700; font-size: 15px; }
+.psearch-foot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.prof-find { margin-left: auto; color: var(--ball); font-weight: 700; text-decoration: none; }
+.act-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.act-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.act-actions svg { width: 18px; height: 18px; }
+
+/* Log a match */
+.log { display: flex; flex-direction: column; gap: 18px; padding-bottom: 120px; }
+.log-intro { margin: -6px 0 16px; }
+.log-teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; }
+.log-team { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.log-team-cap { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.log-vs { align-self: center; color: var(--faint); font-weight: 700; padding-top: 18px; }
+.log-person { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.log-person b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.log-person.me { opacity: .9; }
+.log-add { cursor: pointer; color: var(--muted); font: inherit; font-weight: 600; border-style: dashed; text-align: left; }
+.log-plus { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--sunk); color: var(--ball); font-size: 20px; flex: none; }
+.log-x { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 4px; flex: none; }
+.log-court { text-align: left; cursor: pointer; }
+.log-when { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
+.log-when .input { min-width: 0; width: 100%; }

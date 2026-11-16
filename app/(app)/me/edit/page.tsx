@@ -298,6 +298,28 @@ export default function EditProfilePage() {
               ))}
             </div>
           </div>
+          <div className="list-row" style={{ cursor: "default", alignItems: "flex-start" }}>
+            <span className="grow">
+              <span className="t">Show me in player search</span>
+              <span className="m" style={{ whiteSpace: "normal" }}>Lets people find you by name. People you&apos;ve played with can always find you.</span>
+            </span>
+            {(() => {
+              const on = (profile as { discoverable?: boolean } | null)?.discoverable !== false;
+              return (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
+                  aria-label="Show me in player search"
+                  className={`toggle${on ? " on" : ""}`}
+                  onClick={async () => {
+                    const err = await update({ discoverable: !on } as never);
+                    toast(err ?? (!on ? "You'll show up in player search." : "Hidden from player search."));
+                  }}
+                />
+              );
+            })()}
+          </div>
         </div>
       </section>
 

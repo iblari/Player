@@ -194,6 +194,11 @@ export default function ProfileView({ userId: who }: { userId: string }) {
           <b>{card.following}</b> following
         </button>
         {!self && card.follows_me && <span className="pill" style={{ marginLeft: 6 }}>Follows you</span>}
+        {self && (
+          <Link href="/players" className="prof-find">
+            Find players
+          </Link>
+        )}
       </div>
 
       <div className="btn-row">

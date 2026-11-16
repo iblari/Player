@@ -6,7 +6,7 @@ import { ActivityIcon, CourtIcon, HomeIcon, UserIcon } from "./Icons";
 const TABS = [
   { href: "/play", label: "Home", icon: <HomeIcon />, match: ["/play", "/host"] },
   { href: "/courts", label: "Courts", icon: <CourtIcon />, match: ["/courts"] },
-  { href: "/activity", label: "Activity", icon: <ActivityIcon />, match: ["/activity", "/stats", "/g/"] },
+  { href: "/activity", label: "Activity", icon: <ActivityIcon />, match: ["/activity", "/stats", "/g/", "/players", "/log"] },
   { href: "/me", label: "Account", icon: <UserIcon />, match: ["/me"] },
 ];
 

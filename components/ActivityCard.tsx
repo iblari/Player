@@ -28,6 +28,8 @@ export type Activity = {
   visibility?: Vis | null;
   effective_visibility?: Vis | null;
   games?: [number, number][] | null;
+  /** Logged after it was played; unscored ones are waiting for the other side to confirm. */
+  logged?: boolean | null;
 };
 type Vis = "everyone" | "followers" | "private";
 
@@ -285,7 +287,7 @@ export default function ActivityCard({
         ) : (
           // No final score yet, so nothing to put on a story card: send them to add it.
           <Link href={`/g/${a.game_id}#score`} className="btn btn-sm act-share">
-            Add score to share
+            {a.logged ? "Waiting for confirmation" : "Add score to share"}
           </Link>
         ))}
     </article>

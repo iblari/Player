@@ -551,6 +551,7 @@ export default function GamePage({
               avatarOf={(pid) => players[pid]?.avatar_url}
               onScored={load}
               hostId={game.host_id}
+              logged={!!game.logged}
             />
           </div>
         )}
