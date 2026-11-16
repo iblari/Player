@@ -18,7 +18,10 @@ export type Ev =
   | "match_logged"
   | "logged_confirmed"
   | "logged_rejected"
-  | "player_search";
+  | "player_search"
+  | "invite_link_shared"
+  | "invite_claimed"
+  | "invite_signup_clicked";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {

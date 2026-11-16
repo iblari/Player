@@ -15,6 +15,7 @@ export default function PlayerSearch({
   me,
   mode = "follow",
   onPick,
+  onGuest,
   exclude = [],
   autoFocus,
   placeholder = "Search players by name",
@@ -22,6 +23,8 @@ export default function PlayerSearch({
   me: string;
   mode?: "follow" | "pick";
   onPick?: (p: FoundPlayer) => void;
+  /** Pick mode: add someone who isn't on the app by name (they get an invite link). */
+  onGuest?: (name: string) => void;
   exclude?: string[];
   autoFocus?: boolean;
   placeholder?: string;
@@ -85,7 +88,9 @@ export default function PlayerSearch({
       ) : list.length === 0 ? (
         <p className="muted small psearch-empty">
           {typed
-            ? `No players called “${q.trim()}”. Check the spelling, or share your QR code so they can find you.`
+            ? mode === "pick" && onGuest
+              ? `No players called “${q.trim()}” yet.`
+              : `No players called “${q.trim()}”. Check the spelling, or share your QR code so they can find you.`
             : mode === "pick"
               ? "Type a name to find who you played with."
               : "Type a name to find friends. People you play with show up here too."}
@@ -122,6 +127,15 @@ export default function PlayerSearch({
             );
           })}
         </div>
+      )}
+      {mode === "pick" && onGuest && typed && (
+        <button type="button" className="list-row psearch-row psearch-guest" onClick={() => onGuest(q.trim().replace(/\s+/g, " ").slice(0, 40))}>
+          <span className="log-plus">+</span>
+          <span className="grow">
+            <span className="t">Add “{q.trim().slice(0, 40)}”</span>
+            <span className="m">Not on Players Club · we&apos;ll give you a link to send</span>
+          </span>
+        </button>
       )}
     </div>
   );

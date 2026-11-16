@@ -964,3 +964,20 @@ button.psearch-row { width: 100%; text-align: left; font: inherit; color: inheri
 .log-court { text-align: left; cursor: pointer; }
 .log-when { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
 .log-when .input { min-width: 0; width: 100%; }
+
+/* Invite link landing page */
+.invite { justify-content: center; max-width: 460px; gap: 14px; text-align: left; }
+.invite h1 { margin: 0; line-height: 1.02; }
+.invite > p { margin: 0; }
+.inv-kicker { color: var(--ball); font-weight: 700; }
+.inv-board { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px; }
+.inv-row { display: flex; align-items: center; gap: 6px; }
+.inv-row .inv-names { flex: 1; min-width: 0; font-weight: 700; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.inv-row.you .inv-names { color: var(--ink); }
+.inv-score { width: 40px; text-align: center; font-family: var(--f-display, inherit); font-weight: 800; font-size: 28px; color: var(--faint); }
+.inv-score.win { color: var(--ink); }
+.inv-row.you .inv-score.win { color: var(--ball); }
+.inv-head .inv-score { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--faint); }
+.inv-foot { margin-top: 10px !important; }
+.log-invite { color: var(--ball); font-weight: 600; }
+.psearch-guest { border: 1px dashed var(--line); border-radius: 16px; }

@@ -71,6 +71,10 @@ export default function GameResult({
   const [err, setErr] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
+  // Logged with people not on the app yet: their invite links, and the score held until they join.
+  const [invites, setInvites] = useState<{ token: string; guest_name: string; team: string; claimed_by: string | null }[]>([]);
+  const [held, setHeld] = useState<[number, number][] | null>(null);
+  const [qrFor, setQrFor] = useState<{ token: string; name: string } | null>(null);
   const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
@@ -79,6 +83,14 @@ export default function GameResult({
     await sb.rpc("finalize_due", { p_game: gameId });
     const { data: reps } = await sb.from("score_reports").select("*").eq("game_id", gameId).order("created_at");
     setReports((reps as Report[]) ?? []);
+    if (logged) {
+      const [{ data: inv }, { data: pg }] = await Promise.all([
+        sb.from("game_invites").select("token, guest_name, team, claimed_by").eq("game_id", gameId).order("created_at"),
+        sb.rpc("pending_games", { p_game: gameId }),
+      ]);
+      setInvites((inv as typeof invites) ?? []);
+      setHeld((pg as [number, number][] | null) ?? null);
+    }
     const [{ data: r, error: rErr }, { data: h }, { data: fb }, { data: pa }] = await Promise.all([
       sb.from("game_results").select("*").eq("game_id", gameId).maybeSingle(),
       sb.from("rating_history").select("player_id, mu_before, mu_after, won").eq("game_id", gameId),
@@ -90,7 +102,7 @@ export default function GameResult({
     setResult((r as Result) ?? null);
     setHist(((h as Hist[]) ?? []).map((x) => ({ ...x, mu_before: Number(x.mu_before), mu_after: Number(x.mu_after) })));
     setFeedbackDone(((fb as unknown[]) ?? []).length > 0 || !!pa);
-  }, [gameId, userId]);
+  }, [gameId, userId, logged]);
 
   useEffect(() => {
     load();
@@ -178,6 +190,59 @@ export default function GameResult({
   if (logged && !result && !editing) {
     const hr = reports.find((r) => r.reporter_id === hostId);
     if (hr) return LoggedView();
+    const waiting = invites.filter((i) => !i.claimed_by);
+    if (waiting.length) return WaitingView(waiting);
+  }
+
+  function WaitingView(waiting: typeof invites) {
+    const first = (n: string) => n.split(" ")[0];
+    const names = waiting.map((w) => first(w.guest_name)).join(" and ");
+    const link = (t: string) => `${window.location.origin}/i/${t}`;
+    async function send(w: (typeof invites)[number]) {
+      const url = link(w.token);
+      const text = `${nameOf(hostId) === "You" ? "I" : nameOf(hostId)} logged our ${meta.label.toLowerCase()} match on Players Club. Tap to confirm the score:`;
+      track("invite_link_shared");
+      try {
+        if (navigator.share) return await navigator.share({ text, url });
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        toast("Link copied. Paste it in a text.");
+      } catch {}
+    }
+    async function remove() {
+      if (!window.confirm("Remove this match?")) return;
+      const { error } = await supabase().rpc("reject_logged", { p_game: gameId });
+      if (error) return toast("Couldn't remove it. Try again.");
+      toast("Removed.");
+      onScored?.();
+    }
+    return (
+      <section className="block result">
+        <h2>Waiting for {names} to join</h2>
+        {held && <GamesTable games={held} unit={unit} left={doubles ? "Your team" : "You"} right="Them" />}
+        <p className="small muted" style={{ margin: 0 }}>
+          {isHost
+            ? `${names} ${waiting.length > 1 ? "aren't" : "isn't"} on Players Club yet. Send ${waiting.length > 1 ? "each of them their" : "them the"} link: once they sign up and confirm, the match counts. Links work for 30 days.`
+            : `${nameOf(hostId)} invited ${names}. The score shows here once they join.`}
+        </p>
+        {isHost &&
+          waiting.map((w) => (
+            <div key={w.token} className="btn-row">
+              <button className="btn btn-ball" onClick={() => send(w)}>
+                Send {first(w.guest_name)} the link
+              </button>
+              <button className="btn" onClick={() => setQrFor({ token: w.token, name: first(w.guest_name) })}>
+                QR code
+              </button>
+            </div>
+          ))}
+        {isHost && (
+          <button className="btn btn-ghost btn-sm" onClick={remove}>
+            Remove this match
+          </button>
+        )}
+        {qrFor && <InviteQR url={link(qrFor.token)} name={qrFor.name} onClose={() => setQrFor(null)} />}
+      </section>
+    );
   }
 
   function LoggedView() {
@@ -496,6 +561,35 @@ function GamesTable({ games, unit, left, right, compact }: { games: [number, num
           <b className={b > a ? "win" : ""}>{b}</b>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** A scannable invite link, for when the friend is standing right there. */
+function InviteQR({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  const [svg, setSvg] = useState<string | null>(null);
+  useEffect(() => {
+    import("qrcode").then((Q) => Q.toString(url, { type: "svg", errorCorrectionLevel: "H", margin: 0, color: { dark: "#111111", light: "#ffffff" } }).then(setSvg));
+  }, [url]);
+  return (
+    <div className="sheet-wrap" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Invite code for ${name}`}>
+      <div className="sheet qr-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-grip" />
+        <div className="qr-card">
+          <div className="qr-who">
+            <b>{name}, scan to confirm our match</b>
+          </div>
+          <div className="qr-code">
+            {svg ? <span className="qr-svg" dangerouslySetInnerHTML={{ __html: svg }} /> : <span className="qr-svg qr-wait" />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mark.svg" alt="" className="qr-logo" />
+          </div>
+          <span className="qr-hint">Opens Players Club. Sign up takes 30 seconds, then confirm the score.</span>
+        </div>
+        <button className="btn btn-ghost btn-block" onClick={onClose}>
+          Done
+        </button>
+      </div>
     </div>
   );
 }

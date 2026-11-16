@@ -14,6 +14,9 @@ import type { FoundPlayer } from "@/lib/players";
 import type { Court, Sport } from "@/lib/types";
 
 type Slot = "partner" | "opp1" | "opp2";
+/** Someone on the app, or a name we'll send an invite link to. */
+type Person = FoundPlayer | { guest: true; id: string; display_name: string; avatar_url: null };
+const isGuest = (p: Person): p is Extract<Person, { guest: true }> => "guest" in p;
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const DURATIONS = [30, 60, 90, 120, 180];
@@ -36,7 +39,7 @@ export default function LogMatchPage() {
   const { userId, profile } = useSession();
   const [sport, setSport] = useState<Sport>("pickleball");
   const [doubles, setDoubles] = useState(false);
-  const [people, setPeople] = useState<Partial<Record<Slot, FoundPlayer>>>({});
+  const [people, setPeople] = useState<Partial<Record<Slot, Person>>>({});
   const [picking, setPicking] = useState<Slot | null>(null);
   const [court, setCourt] = useState<Court | null>(null);
   const [courtSheet, setCourtSheet] = useState(false);
@@ -53,7 +56,7 @@ export default function LogMatchPage() {
   const { courts, coords } = useNearby(15, sport);
 
   const slots: Slot[] = doubles ? ["partner", "opp1", "opp2"] : ["opp1"];
-  const chosen = slots.map((s) => people[s]?.id).filter(Boolean) as string[];
+  const chosen = slots.map((s) => people[s]).filter((p): p is Person => !!p && !isGuest(p)).map((p) => p.id);
   const ready = slots.every((s) => people[s]) && !!court;
   const won = sets.filter(([m, t]) => m > t).length;
   const lost = sets.filter(([m, t]) => t > m).length;
@@ -66,26 +69,30 @@ export default function LogMatchPage() {
     if (sets.some(([m, t]) => m === t)) return setErr(ERR.bad_score);
     setBusy(true);
     setErr(null);
-    const teamA = [userId, ...(doubles ? [people.partner!.id] : [])];
-    const teamB = doubles ? [people.opp1!.id, people.opp2!.id] : [people.opp1!.id];
-    const { data, error } = await supabase().rpc("log_match", {
-      p_court: court!.id,
-      p_sport: sport,
-      p_started_at: at.toISOString(),
-      p_minutes: minutes,
-      p_team_a: teamA,
-      p_team_b: teamB,
-      p_games: sets,
-    });
+    const sideA = doubles ? [people.partner!] : [];
+    const sideB = (doubles ? [people.opp1!, people.opp2!] : [people.opp1!]) as Person[];
+    const teamA = [userId, ...sideA.filter((p) => !isGuest(p)).map((p) => p.id)];
+    const teamB = sideB.filter((p) => !isGuest(p)).map((p) => p.id);
+    const guests = [
+      ...sideA.filter(isGuest).map((p) => ({ team: "a", name: p.display_name })),
+      ...sideB.filter(isGuest).map((p) => ({ team: "b", name: p.display_name })),
+    ];
+    const args = { p_court: court!.id, p_sport: sport, p_started_at: at.toISOString(), p_minutes: minutes, p_team_a: teamA, p_team_b: teamB, p_games: sets };
+    const { data, error } = await supabase().rpc("log_match", guests.length ? { ...args, p_guests: guests } : args);
     if (error) {
       setBusy(false);
       const key = Object.keys(ERR).find((k) => error.message.includes(k));
       return setErr(key ? ERR[key] : /log_match/.test(error.message) ? "Logging matches isn't switched on yet. Try again soon." : "Couldn't log it. Try again.");
     }
-    track("match_logged", { sport, doubles });
-    fetch("/api/notify-logged", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
-    toast(`Logged. It counts once ${doubles ? "an opponent" : people.opp1!.display_name.split(" ")[0]} confirms.`);
-    router.replace(`/g/${data}`);
+    track("match_logged", { sport, doubles, invites: guests.length });
+    if (teamB.length || teamA.length > 1)
+      fetch("/api/notify-logged", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
+    toast(
+      guests.length
+        ? `Logged. Send ${guests.map((g) => g.name.split(" ")[0]).join(" and ")} the link so it counts.`
+        : `Logged. It counts once ${doubles ? "an opponent" : people.opp1!.display_name.split(" ")[0]} confirms.`
+    );
+    router.replace(`/g/${data}#score`);
   }
 
   if (!userId) return <div className="skeleton" />;
@@ -224,7 +231,7 @@ export default function LogMatchPage() {
           {busy ? "Logging…" : !ready ? (court ? "Add who you played" : "Add players and court") : "Log match"}
         </button>
         <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
-          We&apos;ll ask {doubles ? "your opponents" : "your opponent"} to confirm. If they say it didn&apos;t happen, it&apos;s removed.
+          We&apos;ll ask {doubles ? "your opponents" : "your opponent"} to confirm. If they say it didn&apos;t happen, it&apos;s removed. Not on Players Club? Type their name and you&apos;ll get a link to send.
         </p>
       </div>
 
@@ -248,6 +255,10 @@ export default function LogMatchPage() {
                 setPeople((x) => ({ ...x, [picking]: p }));
                 setPicking(null);
               }}
+              onGuest={(name) => {
+                setPeople((x) => ({ ...x, [picking]: { guest: true, id: `guest-${picking}`, display_name: name, avatar_url: null } }));
+                setPicking(null);
+              }}
             />
           </div>
         </div>
@@ -269,7 +280,7 @@ export default function LogMatchPage() {
   );
 }
 
-function PersonSlot({ p, label, onAdd, onClear }: { p?: FoundPlayer; label: string; onAdd: () => void; onClear: () => void }) {
+function PersonSlot({ p, label, onAdd, onClear }: { p?: Person; label: string; onAdd: () => void; onClear: () => void }) {
   if (!p)
     return (
       <button type="button" className="log-person log-add" onClick={onAdd}>
@@ -280,7 +291,10 @@ function PersonSlot({ p, label, onAdd, onClear }: { p?: FoundPlayer; label: stri
   return (
     <span className="log-person">
       <Avatar id={p.id} name={p.display_name} src={p.avatar_url} size={32} />
-      <b>{p.display_name}</b>
+      <b>
+        {p.display_name}
+        {isGuest(p) && <small className="log-invite"> · invite</small>}
+      </b>
       <button type="button" className="log-x" onClick={onClear} aria-label={`Remove ${p.display_name}`}>
         ×
       </button>

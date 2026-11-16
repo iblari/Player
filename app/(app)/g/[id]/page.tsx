@@ -540,7 +540,8 @@ export default function GamePage({
         inGame &&
         (started || ended) &&
         st !== "cancelled" &&
-        showed.length >= 2 && (
+        // A logged match can start with just the logger while invited players join.
+        (showed.length >= 2 || !!game.logged) && (
           <div id="score" style={{ scrollMarginTop: 16 }}>
             <GameResult
               gameId={game.id}
