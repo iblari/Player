@@ -981,3 +981,51 @@ button.psearch-row { width: 100%; text-align: left; font: inherit; color: inheri
 .inv-foot { margin-top: 10px !important; }
 .log-invite { color: var(--ball); font-weight: 600; }
 .psearch-guest { border: 1px dashed var(--line); border-radius: 16px; }
+
+/* Head to head */
+.h2h { display: flex; flex-direction: column; gap: 18px; padding: 8px 0 120px; }
+.h2h-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 36px; }
+.h2h-top a { text-decoration: none; }
+.h2h-face { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.h2h-p { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.h2h-p b { font-size: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h2h-p span { color: var(--muted); font-size: 14px; font-weight: 600; }
+.h2h-p .avatar, .h2h-p > :first-child { border: 3px solid var(--line); border-radius: 50%; }
+.h2h-p:first-child > :first-child { border-color: var(--ball); }
+.h2h-rec { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.h2h-rec b { font-family: var(--f-display, inherit); font-size: 56px; line-height: 1; font-weight: 800; letter-spacing: .02em; }
+.h2h-rec span { color: var(--muted); font-size: 12px; text-align: center; }
+.h2h-split { display: flex; gap: 3px; width: 120px; height: 8px; margin-top: 6px; }
+.h2h-split i { display: block; border-radius: 4px; background: var(--ink); min-width: 4px; }
+.h2h-split i:first-child { background: var(--ball); }
+.h2h-split.big { width: 100%; height: 14px; }
+.h2h-note { margin: -6px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.h2h-bars { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.h2h-bar { display: grid; grid-template-columns: 44px 1fr 1fr 44px; grid-template-rows: auto auto; column-gap: 6px; row-gap: 6px; align-items: center; }
+.h2h-bar em { grid-column: 1 / -1; grid-row: 1; text-align: center; font-style: normal; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.h2h-bar > b { grid-row: 2; font-family: var(--f-display, inherit); font-size: 22px; font-weight: 800; color: var(--muted); }
+.h2h-bar > b:last-child { text-align: right; }
+.h2h-bar > b.lead { color: var(--ball); }
+.h2h-bar > b.lead.them { color: var(--ink); }
+.h2h-bar .h2h-track { grid-row: 2; display: flex; height: 10px; border-radius: 5px; background: var(--sunk); overflow: hidden; }
+.h2h-bar > b:first-child { grid-column: 1; }
+.h2h-bar .h2h-track.left { grid-column: 2; justify-content: flex-end; }
+.h2h-bar .h2h-track.right { grid-column: 3; }
+.h2h-bar > b:last-child { grid-column: 4; }
+.h2h-track i { display: block; height: 100%; border-radius: 5px; background: var(--faint); }
+.h2h-track i.lead { background: var(--ball); }
+.h2h-track i.lead.them { background: var(--ink); }
+.h2h-big { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding-top: 4px; }
+.h2h-big em { font-style: normal; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.h2h-big span { font-family: var(--f-display, inherit); font-size: 22px; font-weight: 800; color: var(--muted); }
+.h2h-big span:last-child { text-align: right; }
+.h2h-big span.win { color: var(--ball); }
+.h2h-big span.win.them { color: var(--ink); }
+.h2h-cap { display: block; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.h2h-pred-n { display: flex; justify-content: space-between; margin-top: 8px; }
+.h2h-pred-n b:first-child { color: var(--ball); }
+.h2h-chips { display: flex; gap: 8px; margin-bottom: 10px; }
+.h2h-chip { width: 42px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; text-decoration: none; background: var(--sunk); color: var(--ink); }
+.h2h-chip.w { background: var(--ball); color: #142000; }
+.h2h-res { font-weight: 700; color: var(--muted); }
+.h2h-res.w { color: var(--ball); }

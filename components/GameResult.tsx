@@ -72,7 +72,7 @@ export default function GameResult({
   const [unavailable, setUnavailable] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   // Logged with people not on the app yet: their invite links, and the score held until they join.
-  const [invites, setInvites] = useState<{ token: string; guest_name: string; team: string; claimed_by: string | null }[]>([]);
+  const [invites, setInvites] = useState<{ token: string; guest_name: string; team: string; claimed_by: string | null; approved?: boolean | null }[]>([]);
   const [held, setHeld] = useState<[number, number][] | null>(null);
   const [qrFor, setQrFor] = useState<{ token: string; name: string } | null>(null);
   const [editing, setEditing] = useState(false);
@@ -85,7 +85,12 @@ export default function GameResult({
     setReports((reps as Report[]) ?? []);
     if (logged) {
       const [{ data: inv }, { data: pg }] = await Promise.all([
-        sb.from("game_invites").select("token, guest_name, team, claimed_by").eq("game_id", gameId).order("created_at"),
+        sb
+          .from("game_invites")
+          .select("token, guest_name, team, claimed_by, approved")
+          .eq("game_id", gameId)
+          .order("created_at")
+          .then((r) => (r.error ? sb.from("game_invites").select("token, guest_name, team, claimed_by").eq("game_id", gameId).order("created_at") : r)),
         sb.rpc("pending_games", { p_game: gameId }),
       ]);
       setInvites((inv as typeof invites) ?? []);
@@ -190,12 +195,69 @@ export default function GameResult({
   if (logged && !result && !editing) {
     const hr = reports.find((r) => r.reporter_id === hostId);
     if (hr) return LoggedView();
-    const waiting = invites.filter((i) => !i.claimed_by);
+    // Still waiting on someone to join, or on the logger to OK who joined.
+    // (approved is undefined if the database predates approval: then joining alone is enough.)
+    const waiting = invites.filter((i) => !i.claimed_by || i.approved === null);
     if (waiting.length) return WaitingView(waiting);
   }
 
-  function WaitingView(waiting: typeof invites) {
+  function WaitingView(all: typeof invites) {
     const first = (n: string) => n.split(" ")[0];
+    const joined = all.filter((w) => w.claimed_by && w.approved === null);
+    const waiting = all.filter((w) => !w.claimed_by);
+    async function answer(w: (typeof invites)[number], ok: boolean) {
+      const { error } = await supabase().rpc("approve_invite", { p_token: w.token, p_ok: ok });
+      if (error) return toast("Couldn't save. Try again.");
+      track(ok ? "invite_approved" : "invite_denied");
+      toast(ok ? "Thanks. They can confirm the score now." : `Removed. Send ${first(w.guest_name)} the new link.`);
+      load();
+      onScored?.();
+    }
+    const mine = joined.find((w) => w.claimed_by === userId);
+    if (mine)
+      return (
+        <section className="block result">
+          <h2>Almost there</h2>
+          {held && <GamesTable games={held} unit={unit} left="Them" right="You" />}
+          <p className="small muted" style={{ margin: 0 }}>
+            You joined {nameOf(hostId)}&apos;s match. Once they confirm it&apos;s you, you can confirm the score.
+          </p>
+        </section>
+      );
+    if (isHost && joined.length)
+      return (
+        <section className="block result">
+          <h2>Is this them?</h2>
+          {joined.map((w) => (
+            <div key={w.token} className="notice" style={{ borderColor: "var(--ball)" }}>
+              <span className="row" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Avatar id={w.claimed_by!} name={nameOf(w.claimed_by!)} src={avatarOf(w.claimed_by!)} size={40} />
+                <b>
+                  {nameOf(w.claimed_by!)} joined as &ldquo;{w.guest_name}&rdquo;
+                </b>
+              </span>
+              <span className="muted">Only say yes if this is who you played. Nothing counts until you do.</span>
+              <div className="btn-row" style={{ width: "100%" }}>
+                <button className="btn btn-ball" onClick={() => answer(w, true)}>
+                  Yes, that&apos;s them
+                </button>
+                <button className="btn" onClick={() => answer(w, false)}>
+                  Not them
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      );
+    if (!waiting.length)
+      return (
+        <section className="block result">
+          <h2>Waiting for {nameOf(hostId)}</h2>
+          <p className="small muted" style={{ margin: 0 }}>
+            {nameOf(hostId)} is checking who joined. The score shows here after that.
+          </p>
+        </section>
+      );
     const names = waiting.map((w) => first(w.guest_name)).join(" and ");
     const link = (t: string) => `${window.location.origin}/i/${t}`;
     async function send(w: (typeof invites)[number]) {

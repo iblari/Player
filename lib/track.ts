@@ -22,7 +22,11 @@ export type Ev =
   | "invite_link_shared"
   | "invite_claimed"
   | "invite_signup_clicked"
-  | "confirm_link_shared";
+  | "confirm_link_shared"
+  | "invite_approved"
+  | "invite_denied"
+  | "h2h_opened"
+  | "h2h_shared";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {

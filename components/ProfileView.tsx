@@ -211,9 +211,15 @@ export default function ProfileView({ userId: who }: { userId: string }) {
             {card.am_following ? "Following" : "Follow"}
           </button>
         )}
-        <button className="btn" onClick={() => setQr(true)}>
-          Share profile
-        </button>
+        {self ? (
+          <button className="btn" onClick={() => setQr(true)}>
+            Share profile
+          </button>
+        ) : (
+          <Link className="btn" href={userId ? `/p/${who}/vs` : `/login?next=${encodeURIComponent(`/p/${who}/vs`)}`}>
+            Head to head
+          </Link>
+        )}
       </div>
       {qr && (
         <ProfileQR

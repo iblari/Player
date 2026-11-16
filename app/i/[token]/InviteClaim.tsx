@@ -34,6 +34,7 @@ export default function InviteClaim({ token, claimed, gameId }: { token: string;
       return setErr(k ? MSG[k] : "Couldn't join. Try again.");
     }
     track("invite_claimed");
+    fetch("/api/notify-claimed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId: data }) }).catch(() => {});
     router.replace(`/g/${data}#score`);
   }
 
