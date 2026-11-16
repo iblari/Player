@@ -4,7 +4,9 @@ type CookieList = { name: string; value: string; options: CookieOptions }[];
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
-const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity"];
+const APP_ROUTES = ["/play", "/host", "/courts", "/me", "/stats", "/activity", "/players", "/log"];
+// Whole path segments only: "/log" must not catch "/login".
+const isAppRoute = (path: string) => APP_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
 
 // The one address production should be seen on. Vercel also serves production on its own
 // *.vercel.app aliases; send those here so sign-ins, cookies and shared links stay on one domain.
@@ -63,7 +65,7 @@ export async function middleware(request: NextRequest) {
   const { data } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  if (!data.user && APP_ROUTES.some((r) => path.startsWith(r))) {
+  if (!data.user && isAppRoute(path)) {
     const to = request.nextUrl.clone();
     to.pathname = "/login";
     to.searchParams.set("next", path);
