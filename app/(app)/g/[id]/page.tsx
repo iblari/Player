@@ -357,9 +357,9 @@ export default function GamePage({
           {!userId ? (
             <Link
               className="btn btn-ball btn-block"
-              href={`/login?next=/g/${id}`}
+              href={`/login?next=${encodeURIComponent(`/g/${id}#score`)}`}
             >
-              Sign in to join
+              {game.logged ? "Sign in to confirm the score" : "Sign in to join"}
             </Link>
           ) : st === "open" && !inGame ? (
             <button

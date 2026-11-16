@@ -294,6 +294,24 @@ export default function GameResult({
               {isHost ? "You logged this match." : `${nameOf(hostId)} logged this match.`} It counts toward ratings once {otherTeam.map(nameOf).join(" or ")} confirms.
             </p>
           )}
+          {isHost && !differs && (
+            <button
+              className="btn btn-ball btn-block"
+              onClick={async () => {
+                const who = otherTeam.map((x) => nameOf(x).split(" ")[0]).join(" or ");
+                const url = `${window.location.origin}/g/${gameId}`;
+                const text = `I logged our ${meta.label.toLowerCase()} match on Players Club. Tap to confirm the score:`;
+                track("confirm_link_shared");
+                try {
+                  if (navigator.share) return await navigator.share({ text, url });
+                  await navigator.clipboard.writeText(`${text} ${url}`);
+                  toast(`Link copied. Send it to ${who}.`);
+                } catch {}
+              }}
+            >
+              Send {otherTeam.map((x) => nameOf(x).split(" ")[0]).join(" & ")} a link to confirm
+            </button>
+          )}
           {isHost && (
             <div className="btn-row">
               {differs && theirTake && (

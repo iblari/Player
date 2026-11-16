@@ -10,6 +10,8 @@ export type Invite = {
   court: string;
   town: string | null;
   status: "open" | "full" | "cancelled" | "ended";
+  /** Logged after it was played: the logger's score from their side, and each side's names. */
+  logged?: { games: [number, number][]; sideA: string[]; sideB: string[]; confirmed: boolean } | null;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +25,7 @@ export async function getInvite(id: string): Promise<Invite | null> {
   const db = createClient(SUPABASE_URL, key, { auth: { persistSession: false } });
   const { data: g } = await db
     .from("games")
-    .select("host_id, sport, slots, status, ended_at, courts(name, town)")
+    .select("host_id, sport, slots, status, ended_at, logged, courts(name, town)")
     .eq("id", id)
     .maybeSingle();
   if (!g) return null;
@@ -33,6 +35,23 @@ export async function getInvite(id: string): Promise<Invite | null> {
   ]);
   const court = (Array.isArray(g.courts) ? g.courts[0] : g.courts) as { name: string; town: string | null } | null;
   const joined = count ?? 1;
+  let logged: Invite["logged"] = null;
+  if ((g as { logged?: boolean }).logged) {
+    const [{ data: res }, { data: rep }] = await Promise.all([
+      db.from("game_results").select("team_a, team_b, games, score_a, score_b").eq("game_id", id).maybeSingle(),
+      db.from("score_reports").select("team_a, team_b, games, score_a, score_b").eq("game_id", id).eq("reporter_id", g.host_id).maybeSingle(),
+    ]);
+    const r = (res ?? rep) as { team_a: string[]; team_b: string[]; games: [number, number][] | null; score_a: number; score_b: number } | null;
+    if (r) {
+      // Show the logger's side first.
+      const flip = !r.team_a.includes(g.host_id);
+      const ga = flip ? r.team_b : r.team_a, gb = flip ? r.team_a : r.team_b;
+      const gs = (r.games ?? [[r.score_a, r.score_b]]).map(([x, y]) => (flip ? [y, x] : [x, y]) as [number, number]);
+      const { data: ps } = await db.from("profiles").select("id, display_name").in("id", [...ga, ...gb]);
+      const nm = (pid: string) => ((ps ?? []) as { id: string; display_name: string }[]).find((x) => x.id === pid)?.display_name || "Player";
+      logged = { games: gs, sideA: ga.map(nm), sideB: gb.map(nm), confirmed: !!res };
+    }
+  }
   const first = (prof?.display_name || "A player").trim().split(/\s+/)[0];
   return {
     host: first,
@@ -41,6 +60,7 @@ export async function getInvite(id: string): Promise<Invite | null> {
     joined,
     court: court?.name ?? "a court near you",
     town: court?.town ?? null,
+    logged,
     status: g.ended_at ? "ended" : g.status === "cancelled" ? "cancelled" : g.status === "full" || joined >= g.slots ? "full" : "open",
   };
 }

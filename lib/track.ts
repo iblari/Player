@@ -21,7 +21,8 @@ export type Ev =
   | "player_search"
   | "invite_link_shared"
   | "invite_claimed"
-  | "invite_signup_clicked";
+  | "invite_signup_clicked"
+  | "confirm_link_shared";
 
 export function track(name: Ev, props?: Record<string, string | number | boolean | null>) {
   try {

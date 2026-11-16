@@ -287,7 +287,7 @@ export default function ActivityCard({
         ) : (
           // No final score yet, so nothing to put on a story card: send them to add it.
           <Link href={`/g/${a.game_id}#score`} className="btn btn-sm act-share">
-            {a.logged ? "Waiting for confirmation" : "Add score to share"}
+            {a.logged ? "Score not confirmed yet" : "Add score to share"}
           </Link>
         ))}
     </article>
