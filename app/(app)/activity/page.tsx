@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/components/Session";
 import GameRow from "@/components/GameRow";
-import { ChevronIcon, SearchIcon } from "@/components/Icons";
+import { SearchIcon } from "@/components/Icons";
 import { fetchMyGames, fetchPlayers, nameOf, useLiveGames, type GameView } from "@/lib/games";
 import type { PlayerLite } from "@/lib/types";
 
@@ -62,17 +62,6 @@ export default function ActivityPage() {
         )}
       </section>
 
-      <Link className="list" href="/stats" style={{ textDecoration: "none" }}>
-        <span className="list-row">
-          <span className="grow">
-            <span className="t">Is it working?</span>
-            <span className="m">Fill rate, time to fill, and show-up rate across all courts</span>
-          </span>
-          <span className="chev">
-            <ChevronIcon />
-          </span>
-        </span>
-      </Link>
     </>
   );
 }
